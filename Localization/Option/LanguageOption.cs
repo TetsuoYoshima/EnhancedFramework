@@ -107,9 +107,10 @@ namespace EnhancedFramework.Localization {
 
             bool FindLocale(out Locale _locale) {
 
-                for (int i = 0; i < allLanguage.Length; i++) {
-                    _locale = allLanguage[i];
+                ref Locale[] _span = ref allLanguage;
+                for (int i = _span.Length; i-- > 0;) {
 
+                    _locale = _span[i];
                     if (_locale.Identifier == languageIdentifier)
                         return true;
                 }

@@ -22,6 +22,8 @@ namespace EnhancedFramework.Core {
             [Tooltip("Don't do anything")]
             None        = 0,
 
+            [Separator(SeparatorPosition.Top)]
+
             [Tooltip("Set these flags on initialization")]
             OnInit      = 1,
 

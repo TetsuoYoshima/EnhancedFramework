@@ -29,9 +29,9 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Pool
-        protected readonly List<EnhancedPoolableObject> activeObjects = new List<EnhancedPoolableObject>();
-        protected readonly ObjectPool<EnhancedPoolableObject> pool    = new ObjectPool<EnhancedPoolableObject>();
-        
+        protected readonly ObjectPool<EnhancedPoolableObject> pool = new ObjectPool<EnhancedPoolableObject>();
+        protected List<EnhancedPoolableObject> activeObjects       = new List<EnhancedPoolableObject>();
+
         [NonSerialized] private bool isInitialized = false;
 
         // -----------------------
@@ -63,11 +63,13 @@ namespace EnhancedFramework.Core {
         /// <inheritdoc cref="ClearPool(int)"/>
         public virtual void ClearPool(bool _clear, bool _releaseActiveInstances, bool _safeNullCheck = true, int _capacity = 1) {
             if (_releaseActiveInstances) {
-                for (int i = activeObjects.Count; i-- > 0;) {
-                    EnhancedPoolableObject _instance = activeObjects[i];
+
+                ref List<EnhancedPoolableObject> _span = ref activeObjects;
+                for (int i = _span.Count; i-- > 0;) {
+                    EnhancedPoolableObject _instance = _span[i];
 
                     if (_safeNullCheck && (_instance == null)) {
-                        activeObjects.RemoveAt(i);
+                        _span.RemoveAt(i);
                         continue;
                     }
 
@@ -75,7 +77,7 @@ namespace EnhancedFramework.Core {
                         _instance.Release();
                     } catch (MissingReferenceException e) {
                         this.LogErrorMessage("Catch Exception => " + e.Message);
-                        activeObjects.RemoveAt(i);
+                        _span.RemoveAt(i);
                     }
                 }
             }
@@ -158,8 +160,8 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Utility
-        private static readonly List<ScriptableObjectPool> activePools = new List<ScriptableObjectPool>();
-        public static Action OnClearAllScriptableObjectPool = null;
+        private static List<ScriptableObjectPool> activePools = new List<ScriptableObjectPool>();
+        public static Action OnClearAllScriptableObjectPool   = null;
 
         // -----------------------
 
@@ -167,8 +169,9 @@ namespace EnhancedFramework.Core {
         /// Clears all active <see cref="ScriptableObjectPool"/>.
         /// </summary>
         public static void ClearAllScriptableObjectPool() {
-            for (int i = activePools.Count; i-- > 0;) {
-                activePools[i].ClearPool();
+            ref List<ScriptableObjectPool> _span = ref activePools;
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].ClearPool();
             }
 
             OnClearAllScriptableObjectPool?.Invoke();

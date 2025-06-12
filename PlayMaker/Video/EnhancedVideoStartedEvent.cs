@@ -6,6 +6,7 @@
 
 using EnhancedFramework.Core;
 using HutongGames.PlayMaker;
+using System;
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -32,18 +33,23 @@ namespace EnhancedFramework.PlayMaker {
         #endregion
 
         #region Behaviour
+        private Action<VideoPlayer> onStarted = null;
+
+        // -----------------------
+
         public override void Reset() {
             base.Reset();
 
-            Playable = null;
             StartedEvent = null;
+            Playable     = null;
         }
 
         public override void OnEnter() {
             base.OnEnter();
 
             if (Playable.Value is EnhancedVideoPlayer _video) {
-                _video.Started += OnStarted;
+                onStarted ??= OnStarted;
+                _video.Started += onStarted;
             }
 
             Finish();
@@ -53,11 +59,13 @@ namespace EnhancedFramework.PlayMaker {
             base.OnExit();
 
             if (Playable.Value is EnhancedVideoPlayer _video) {
-                _video.Started -= OnStarted;
+                _video.Started -= onStarted;
             }
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void OnStarted(VideoPlayer _video) {
             Fsm.Event(StartedEvent);

@@ -42,6 +42,8 @@ namespace EnhancedFramework.DeveloperConsoleSystem.GameStates {
             // Set the cursor free to use the console.
             _state.IsCursorVisible = true;
             _state.CursorLockMode  = CursorLockMode.None;
+
+            _state.IsPaused = true;
         }
         #endregion
     }

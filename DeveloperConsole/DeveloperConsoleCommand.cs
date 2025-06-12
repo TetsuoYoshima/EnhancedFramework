@@ -52,7 +52,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         /// <summary>
         /// Parameters informations for this command associated callback.
         /// </summary>
-        public readonly DeveloperConsoleCommandParameter[] Parameters = new DeveloperConsoleCommandParameter[0];
+        public DeveloperConsoleCommandParameter[] Parameters = new DeveloperConsoleCommandParameter[0];
 
         /// <summary>
         /// Defines whether this command is part of the built-in commands or a user-defined one.
@@ -76,20 +76,22 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
 
             // Trim aliases.
             Aliases = _aliases.Split(AliasSeparator);
-            int _count = Aliases.Length;
+
+            ref string[] _span = ref Aliases;
+            int _count = _span.Length;
 
             for (int i = _count; i-- > 0;) {
-                string _alias = Aliases[i].RemoveWhitespace();
+                string _alias = _span[i].RemoveWhitespace();
 
                 if (!string.IsNullOrEmpty(_alias)) {
-                    Aliases[i] = _alias;
+                    _span[i] = _alias;
                 } else {
-                    Aliases[i] = Aliases[--_count];
+                    _span[i] = _span[--_count];
                 }
             }
 
-            if (_count != Aliases.Length) {
-                Array.Resize(ref Aliases, _count);
+            if (_count != _span.Length) {
+                Array.Resize(ref _span, _count);
             }
         }
         #endregion
@@ -211,7 +213,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
                 _parameters[i] = _parameter;
             }
 
-            Action _defaultDelegate    = () => _method.Invoke(null, null);
+            Action _defaultDelegate    = ()  => _method.Invoke(null, null);
             Action<object[]> _delegate = (p) => _method.Invoke(null, p);
 
             DeveloperConsoleCommand _command = new DeveloperConsoleCommand(_name, _aliases, _description, _defaultDelegate, _delegate, _parameters);
@@ -235,7 +237,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
 
         #region Comparer
         int IComparer<DeveloperConsoleCommand>.Compare(DeveloperConsoleCommand a, DeveloperConsoleCommand b) {
-            return a.Name.CompareTo(b.Name);
+            return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
         }
         #endregion
 
@@ -251,9 +253,11 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         public string ToCommandString() {
             string _string = Name;
 
-            for (int i = 0; i < Parameters.Length; i++) {
-                var _parameter = Parameters[i];
-                _string += $" {_parameter}";
+            ref DeveloperConsoleCommandParameter[] _span = ref Parameters;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _string += $" {_span[i]}";
             }
 
             return _string;
@@ -267,9 +271,11 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         public string ToFormattedString() {
             string _string = Name.Bold();
 
-            for (int i = 0; i < Parameters.Length; i++) {
-                var _parameter = Parameters[i];
-                _string += $" {_parameter.ToFormattedString()}";
+            ref DeveloperConsoleCommandParameter[] _span = ref Parameters;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _string += $" {_span[i].ToFormattedString()}";
             }
 
             return _string;

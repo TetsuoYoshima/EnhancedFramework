@@ -18,19 +18,9 @@ namespace EnhancedFramework.Core {
     /// </summary>
     public static class Mathm {
         #region Mathematic
-        /// <summary>
-        /// Clamps the given value between a minimum and a maximum.
-        /// </summary>
-        /// <param name="_value">The value to restrict inside the range of the min and max values.</param>
-        /// <param name="_min">The minimum value to compare against.</param>
-        /// <param name="_max">The maximum value to compare against.</param>
-        /// <returns>The result between the min and max values.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double Clamp(double _value, double _min, double _max) {
-            return (_value < _min)
-                 ? _min : ((_value > _max)
-                        ? _max : _value);
-        }
+        // -------------------------------------------
+        // Range
+        // -------------------------------------------
 
         /// <inheritdoc cref="IsInRange(float, float, float)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,6 +55,10 @@ namespace EnhancedFramework.Core {
             return (_value > _min) && (_value < _max);
         }
 
+        // -------------------------------------------
+        // Loop
+        // -------------------------------------------
+
         /// <inheritdoc cref="LoopIncrement(float, float, float)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LoopIncrement(int _value, int _limit, int _increase) {
@@ -91,6 +85,24 @@ namespace EnhancedFramework.Core {
             }
 
             return _value;
+        }
+
+        // -------------------------------------------
+        // Clamp
+        // -------------------------------------------
+
+        /// <summary>
+        /// Clamps the given value between a minimum and a maximum.
+        /// </summary>
+        /// <param name="_value">The value to restrict inside the range of the min and max values.</param>
+        /// <param name="_min">The minimum value to compare against.</param>
+        /// <param name="_max">The maximum value to compare against.</param>
+        /// <returns>The result between the min and max values.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Clamp(double _value, double _min, double _max) {
+            return (_value < _min)
+                 ? _min : ((_value > _max)
+                        ? _max : _value);
         }
 
         /// <summary>
@@ -410,7 +422,7 @@ namespace EnhancedFramework.Core {
                 return -1;
 
             float _random = Random.Range(_minValue, _sum);
-            int _count = _buffer.Count;
+            int _count    = _buffer.Count;
 
             _sum = 0f;
 

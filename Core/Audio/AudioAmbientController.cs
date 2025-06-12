@@ -12,20 +12,22 @@ using UnityEngine;
 using Range = EnhancedEditor.RangeAttribute;
 
 namespace EnhancedFramework.Core {
+    // ===== Wrapper ===== \\
+    
     /// <summary>
     /// <see cref="AudioAmbientSoundAsset"/> player wrapper.
     /// </summary>
     internal sealed class AmbientSoundPlayer : IPoolableObject {
         #region Global Members
         /// <summary>
-        /// <see cref="AudioAmbientSoundAsset"/> to play.
-        /// </summary>
-        public AudioAmbientSoundAsset Sound = null;
-
-        /// <summary>
         /// <see cref="AudioAmbientController"/> associated with this sound.
         /// </summary>
         public AudioAmbientController Ambient = null;
+
+        /// <summary>
+        /// <see cref="AudioAmbientSoundAsset"/> to play.
+        /// </summary>
+        public AudioAmbientSoundAsset Sound = null;
 
         /// <summary>
         /// <see cref="AudioHandler"/> of this sound current play operation.
@@ -52,8 +54,8 @@ namespace EnhancedFramework.Core {
         public void Initialize(AudioAmbientSoundAsset _sound, AudioAmbientController _ambient) {
             Stop(true);
 
-            Sound = _sound;
             Ambient = _ambient;
+            Sound   = _sound;
         }
 
         /// <summary>
@@ -83,8 +85,15 @@ namespace EnhancedFramework.Core {
         /// <param name="_instant">If true, release this object to pool on completion.</param>
         public void Stop(bool _instant = false, bool _sendToPool = false) {
 
-            onCompleteCallback ??= () => AudioManager.Instance.ReleaseAmbientSoundToPool(this);
-            Action _callback = _sendToPool ? onCompleteCallback : null;
+            Action _callback;
+            if (_sendToPool) {
+
+                onCompleteCallback ??= OnStopped;
+                _callback = onCompleteCallback;
+
+            } else {
+                _callback = null;
+            }
 
             Handler.Stop(_instant, _callback);
             Delay.Cancel();
@@ -97,14 +106,18 @@ namespace EnhancedFramework.Core {
         private void OnPlay() {
 
             // Play at position.
-            var (_position, _sourceVolume, _weightVolume) = Ambient.GetPlaySoundSettings(Sound.PlaySoundMode);
-            Handler = Sound.Sound.PlayAudio(Sound.GetPlayPosition(_position));
+            Vector3 _position = Ambient.GetPlaySoundSettings(Sound.PlaySoundMode, out float _sourceVolume, out float _weightVolume);
+            Handler = Sound.PlaySound(_position);
 
             // Volume modifier.
             if (GetPlayer(out EnhancedAudioPlayer _player)) {
                 _player.PushVolumeModifier(AudioPlayerModifier.AmbientSource, _sourceVolume);
                 _player.PushVolumeModifier(AudioPlayerModifier.AmbientWeight, _weightVolume);
             }
+        }
+
+        private void OnStopped() {
+            AudioManager.Instance.ReleaseAmbientSoundToPool(this);
         }
         #endregion
 
@@ -132,6 +145,8 @@ namespace EnhancedFramework.Core {
         #endregion
     }
 
+    // ===== Component ===== \\
+
     /// <summary>
     /// <see cref="AudioAmbientAsset"/>-related <see cref="EnhancedBehaviour"/> controller.
     /// </summary>
@@ -143,15 +158,16 @@ namespace EnhancedFramework.Core {
         [Tooltip("Ambient wrapped in this object")]
         [SerializeField, Enhanced, Required] private AudioAmbientAsset ambient = null;
 
+        [Tooltip("All additionnal audios associated with this ambient")]
         [SerializeField] private AudioAssetController[] additionalSounds = new AudioAssetController[0];
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
-        [Tooltip("Priority of this ambient")]
-        [SerializeField, Enhanced, ShowIf(nameof(overridePriority)), Range(0f, 99f)] private int priority = 0;
-
         [Tooltip("If true, overrides the default priority of this ambient")]
         [SerializeField] private bool overridePriority = false;
+
+        [Tooltip("Priority of this ambient")]
+        [SerializeField, Enhanced, ShowIf(nameof(overridePriority)), Range(0f, 99f)] private int priority = 0;
 
         // -----------------------
 
@@ -192,9 +208,12 @@ namespace EnhancedFramework.Core {
         private void OnDestroy() {
 
             // Stop sounds, which might be delayed and try to access this ambient reference.
-            int _count = sounds.Count;
+
+            ref List<AmbientSoundPlayer> _span = ref sounds;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
-                sounds[i].Stop(true);
+                _span[i].Stop(true);
             }
         }
         #endregion
@@ -203,16 +222,19 @@ namespace EnhancedFramework.Core {
         private const float TweenVolumeDuration = .2f;
 
         private readonly ManualCooldown soundUpdateCooldown = new ManualCooldown(.025f);
-        private readonly List<AmbientSoundPlayer> sounds    = new List<AmbientSoundPlayer>();
+        private          List<AmbientSoundPlayer> sounds    = new List<AmbientSoundPlayer>();
 
         private AudioHandler mainHandler = default;
 
-        // -----------------------
+        // -------------------------------------------
+        // Activation
+        // -------------------------------------------
 
         protected override void OnActivation() {
 
             // Audio setup.
             int _count = ambient.SoundCount;
+
             for (int i = 0; i < _count; i++) {
 
                 AmbientSoundPlayer _sound = AudioManager.Instance.GetAmbientSoundFromPool();
@@ -221,8 +243,10 @@ namespace EnhancedFramework.Core {
                 sounds.Add(_sound);
             }
 
-            for (int i = additionalSounds.Length; i-- > 0;) {
-                additionalSounds[i].Activate(false);
+            ref AudioAssetController[] _span = ref additionalSounds;
+
+            for (int i = _span.Length; i-- > 0;) {
+                _span[i].Activate(false);
             }
 
             mainHandler = ambient.MainAudio.PlayAudio(transform);
@@ -240,12 +264,16 @@ namespace EnhancedFramework.Core {
             AudioManager.Instance.PopAmbient(this, !isActiveAndEnabled);
 
             // Stop audio.
-            for (int i = sounds.Count; i-- > 0;) {
-                sounds[i].Stop(false, true);
+            ref List<AmbientSoundPlayer> _span = ref sounds;
+            
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].Stop(false, true);
             }
 
-            for (int i = additionalSounds.Length; i-- > 0;) {
-                additionalSounds[i].Deactivate(false);
+            ref AudioAssetController[] _addSpan = ref additionalSounds;
+
+            for (int i = _addSpan.Length; i-- > 0;) {
+                _addSpan[i].Deactivate(false);
             }
 
             sounds.Clear();
@@ -280,8 +308,10 @@ namespace EnhancedFramework.Core {
             Vector2 _range = areaSettings.MinMaxDistance;
             _actorDistance = Mathm.NormalizedValue(_actorDistance, _range.y, _range.x);
 
-            for (int i = sounds.Count; i-- > 0;) {
-                sounds[i].Update(useRangeArea, _actorDistance);
+            ref List<AmbientSoundPlayer> _span = ref sounds;
+
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].Update(useRangeArea, _actorDistance);
             }
         }
 
@@ -304,22 +334,26 @@ namespace EnhancedFramework.Core {
 
             // Volume modifier.
             if (mainHandler.GetHandle(out EnhancedAudioPlayer _player)) {
-                SetVolume(_player);
+                SetVolume(_player, _weight);
             }
 
-            for (int i = sounds.Count; i-- > 0;) {
-                if (sounds[i].GetPlayer(out _player)) {
-                    SetVolume(_player);
+            ref List<AmbientSoundPlayer> _span = ref sounds;
+
+            for (int i = _span.Count; i-- > 0;) {
+                if (_span[i].GetPlayer(out _player)) {
+                    SetVolume(_player, _weight);
                 }
             }
 
-            for (int i = additionalSounds.Length; i-- > 0;) {
-                additionalSounds[i].SetVolume(AudioPlayerModifier.AmbientWeight, _weight, TweenVolumeDuration);
+            ref AudioAssetController[] _addSpan = ref additionalSounds;
+
+            for (int i = _addSpan.Length; i-- > 0;) {
+                _addSpan[i].SetVolume(AudioPlayerModifier.AmbientWeight, _weight, TweenVolumeDuration);
             }
 
             // ----- Local Method ----- \\
 
-            void SetVolume(EnhancedAudioPlayer _player) {
+            static void SetVolume(EnhancedAudioPlayer _player, float _weight) {
                 _player.TweenVolumeModifier(AudioPlayerModifier.AmbientWeight, _weight, TweenVolumeDuration);
             }
         }
@@ -330,12 +364,12 @@ namespace EnhancedFramework.Core {
         /// Get informations used to play a sound from this ambient.
         /// </summary>
         /// <param name="_playMode">Mode used to determine the position where to play the sound.</param>
-        /// <returns>Position where to play the sound, source volume modifier and weight volume modifier of the sound.</returns>
-        internal (Vector3 _position, float _sourceVolume, float _weightVolume) GetPlaySoundSettings(AudioAmbientSoundAsset.PlayMode _playMode) {
+        /// <param name="_sourceVolume">Source volume modifier of the sound.</param>
+        /// <param name="_weightVolume">Weight volume modifier of the sound.</param>
+        /// <returns>Position where to play the sound.</returns>
+        internal Vector3 GetPlaySoundSettings(AudioAmbientSoundAsset.PlayMode _playMode, out float _sourceVolume, out float _weightVolume) {
 
-            // Position.
             Vector3 _position;
-
             switch (_playMode) {
 
                 case AudioAmbientSoundAsset.PlayMode.FromListener:
@@ -352,7 +386,10 @@ namespace EnhancedFramework.Core {
                     break;
             }
 
-            return (_position, ambient.SoundVolume, ambientWeight);
+            _sourceVolume = ambient.SoundVolume;
+            _weightVolume = ambientWeight;
+
+            return _position;
         }
         #endregion
     }

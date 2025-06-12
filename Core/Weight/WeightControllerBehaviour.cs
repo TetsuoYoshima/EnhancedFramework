@@ -81,6 +81,8 @@ namespace EnhancedFramework.Core {
 
         [NonSerialized] protected bool isActor = false;
 
+        // -----------------------
+
         /// <summary>
         /// Weight of this object.
         /// </summary>
@@ -190,11 +192,13 @@ namespace EnhancedFramework.Core {
                 return _alpha;
             }
         }
-        #endif
+#endif
         #endregion
 
         #region Behaviour
-        public const float UpdateCooldwonDefaultDuration = .2f;
+        private const UpdateRegistration UpdateType = UpdateRegistration.Dynamic;
+        private const float UpdateCooldwonDefaultDuration = .2f;
+
         protected readonly ManualCooldown updateCooldown = new ManualCooldown(UpdateCooldwonDefaultDuration);
 
         /// <summary>
@@ -276,14 +280,14 @@ namespace EnhancedFramework.Core {
         protected override void OnActivation() {
             base.OnActivation();
 
-            UpdateManager.Instance.Register(this, UpdateRegistration.Dynamic);
+            UpdateManager.Instance.Register(this, UpdateType);
             SetWeight(0f);
         }
 
         protected override void OnDeactivation() {
             base.OnDeactivation();
 
-            UpdateManager.Instance.Unregister(this, UpdateRegistration.Dynamic);
+            UpdateManager.Instance.Unregister(this, UpdateType);
         }
         #endregion
 

@@ -887,7 +887,7 @@ namespace EnhancedFramework.Inputs {
             // Used to consistently disable capture during loading or any sequence that doesn't require input.
             // Reduces potential machine-dependant issues (like loading times).
 
-            InputDatabase _database = InputDatabase.Database;
+            InputDatabase _database = InputDatabase.I;
             bool _active = false;
 
             for (int i = 0; i < _database.InputMapCount; i++) {
@@ -943,7 +943,7 @@ namespace EnhancedFramework.Inputs {
         /// <param name="_pause"></param>
         private void PauseOrphanInputs(bool _pause) {
 
-            InputDatabase _database = InputDatabase.Database;
+            InputDatabase _database = InputDatabase.I;
             bool _active = false;
 
             for (int i = _database.InputCount; i-- > 0;) {

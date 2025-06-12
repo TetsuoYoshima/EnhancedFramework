@@ -41,7 +41,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void Stop() {
             if (Particle.Value is ParticleSystemAsset _particle) {

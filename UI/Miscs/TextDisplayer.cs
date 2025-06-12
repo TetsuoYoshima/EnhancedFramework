@@ -13,6 +13,7 @@ using DG.Tweening;
 using EnhancedEditor;
 using EnhancedFramework.Core;
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -114,7 +115,10 @@ namespace EnhancedFramework.UI {
         public void DisplayPerCharacter(PairCollection<string, float> _texts, float _characterDuration, Action _onComplete = null, bool _isInstant = false, bool _append = false) {
             CompleteDisplay(false);
 
-            if (_texts.Count == 0) {
+            ref List<Pair<string, float>> _span = ref _texts.collection;
+            int _count = _span.Count;
+
+            if (_count == 0) {
                 return;
             }
 
@@ -123,9 +127,9 @@ namespace EnhancedFramework.UI {
                 sequence = DOTween.Sequence();
             }
 
-            for (int i = 0; i < _texts.Count; i++) {
+            for (int i = 0; i < _count; i++) {
 
-                Pair<string, float> _text = _texts[i];
+                Pair<string, float> _text = _span[i];
                 Display(_text.First, _characterDuration, true, null, _isInstant, _append);
 
                 if (!_isInstant) {
@@ -154,32 +158,36 @@ namespace EnhancedFramework.UI {
             }
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
 
         private void Display(string _text, float duration, bool isDurationPerCharacter, Action _onComplete, bool _isInstant, bool _append) {
-            int _visibleCount = 0;
 
+            int _visibleCount = 0;
             _text = _text.Replace(@"\n", "\n").Replace(@"\t", "\t");
+
+            TextMeshProUGUI _textComponent = text;
 
             // Set text.
             if (_append) {
-                _text = text.text + _text;
-                _visibleCount = text.textInfo.characterCount;
+                _text = _textComponent.text + _text;
+                _visibleCount = _textComponent.textInfo.characterCount;
             } else {
-                text.maxVisibleCharacters = 0;
+                _textComponent.maxVisibleCharacters = 0;
             }
 
-            int _visibleCharacter = text.maxVisibleCharacters;
+            int _visibleCharacter = _textComponent.maxVisibleCharacters;
 
-            text.text = _text;
-            text.maxVisibleCharacters = _visibleCharacter;
-            text.ForceMeshUpdate(true, true);
+            _textComponent.text = _text;
+            _textComponent.maxVisibleCharacters = _visibleCharacter;
+            _textComponent.ForceMeshUpdate(true, true);
 
-            int _count = text.textInfo.characterCount;
+            int _count = _textComponent.textInfo.characterCount;
 
             // Instant.
             if (_isInstant) {
-                text.maxVisibleCharacters = _count;
+                _textComponent.maxVisibleCharacters = _count;
                 OnKilled();
 
                 return;
@@ -193,8 +201,8 @@ namespace EnhancedFramework.UI {
             onCompleteTweenCallback = _onComplete;
 
             onKillTweenCallback ??= OnKilled;
-            tween = text.DOMaxVisibleCharacters(_count, duration).SetEase(Ease.Linear)
-                        .SetUpdate(useRealTime).SetRecyclable(true).SetAutoKill(true).OnKill(onKillTweenCallback);
+            tween = _textComponent.DOMaxVisibleCharacters(_count, duration).SetEase(Ease.Linear)
+                                  .SetUpdate(useRealTime).SetRecyclable(true).SetAutoKill(true).OnKill(onKillTweenCallback);
 
             // ----- Local Method ----- \\
 
@@ -213,7 +221,7 @@ namespace EnhancedFramework.UI {
         /// </summary>
         public void CompleteDisplay(bool _completeDisplay = true) {
             sequence.DoKill(_completeDisplay);
-            tween.DoKill(_completeDisplay);
+            tween   .DoKill(_completeDisplay);
         }
 
         /// <summary>

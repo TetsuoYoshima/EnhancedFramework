@@ -11,6 +11,8 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace EnhancedFramework.Core {
+    // ===== Base ===== \\
+    
     /// <summary>
     /// Utility class for an easy-to use realtime cooldown.
     /// </summary>
@@ -21,8 +23,7 @@ namespace EnhancedFramework.Core {
         /// Duration of the cooldown, that is the time (in seconds) it takes to be fully reloaded.
         /// </summary>
         public float Duration = 0f;
-
-        protected float time = 0f;
+        protected float time  = 0f;
 
         /// <summary>
         /// Is this cooldown valid again?
@@ -86,6 +87,8 @@ namespace EnhancedFramework.Core {
         }
         #endregion
     }
+
+    // ===== Derived ===== \\
 
     /// <summary>
     /// Utility class for an easy-to use unscaled-time cooldown.

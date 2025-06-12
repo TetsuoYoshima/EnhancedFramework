@@ -2,9 +2,6 @@
 //
 // Notes:
 //
-//  • FadingGroups use many delegates causing multiple memory allocations.
-//  Can be optimized at some point, but requires quite a lot of rework.
-//
 // ================================================================================== //
 
 #if DOTWEEN_ENABLED
@@ -14,9 +11,10 @@
 using EnhancedEditor;
 using EnhancedFramework.Core;
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 #if TWEENING
 using DG.Tweening;
@@ -25,17 +23,23 @@ using DG.Tweening;
 using Range = EnhancedEditor.RangeAttribute;
 
 namespace EnhancedFramework.UI {
+    // ===== Base ===== \\
+
     /// <summary>
     /// Class wrapper for a fading <see cref="CanvasGroup"/> instance.
     /// <para/> Fading is performed instantly. For a tweening behaviour, please use <see cref="TweeningFadingGroup"/>.
     /// </summary>
     [Serializable]
-    public class FadingGroup : IFadingObject {
+    public abstract class FadingGroup : FadingObject {
+        // --- Enums --- \\
+
         #region Controller Event
         /// <summary>
         /// Lists all different <see cref="FadingGroupController"/> events to call.
         /// </summary>
         public enum ControllerEvent {
+            None = 0,
+
             ShowStarted     = 1 << 0,
             ShowPerformed   = 1 << 1,
             ShowCompleted   = 1 << 2,
@@ -92,31 +96,21 @@ namespace EnhancedFramework.UI {
         }
         #endregion
 
+        // --- Content --- \\
+
         #region Global Members
-        /// <summary>
-        /// This object <see cref="UnityEngine.Canvas"/>.
-        /// </summary>
+        [Tooltip("This object associated Canvas reference")]
         [Enhanced, ShowIf(nameof(UseCanvas)), Required] public Canvas Canvas = null;
 
-        /// <summary>
-        /// This object <see cref="FadingGroupController"/>.
-        /// </summary>
+        [Tooltip("This object associated Controller reference")]
         [Enhanced, ShowIf(nameof(UseController)), Required] public FadingGroupController Controller = null;
 
-        /// <summary>
-        /// This object <see cref="CanvasGroup"/>.
-        /// </summary>
+        [Tooltip("This object associated CanvasGroup reference")]
         [Enhanced, Required] public CanvasGroup Group = null;
 
-        /// <summary>
-        /// The fading target alpha of this group: first value when fading out, second when fading in.
-        /// </summary>
         [Tooltip("The fading target alpha of this group: first value when fading out, second when fading in")]
         [Enhanced, MinMax(0f, 1f)] public Vector2 FadeAlpha = new Vector2(0f, 1f);
 
-        /// <summary>
-        /// Parameters of this group.
-        /// </summary>
         [Tooltip("Parameters of this group")]
         [Enhanced, DisplayName("Parameters")] public Parameters GroupParameters = Parameters.Interactable | Parameters.UnscaledTime;
 
@@ -127,23 +121,30 @@ namespace EnhancedFramework.UI {
 
         [Tooltip("Object to first select when visible")]
         [Enhanced, ShowIf(nameof(UseSelectable)), Required] public Selectable Selectable = null;
+
+        [Tooltip("Currently active object")]
         [Enhanced, ShowIf(nameof(UseSelectable)), ReadOnly] public Selectable ActiveSelectable = null;
 
         // -----------------------
 
         /// <inheritdoc/>
-        public virtual bool IsVisible {
+        public override float ShowDuration {
+            get { return 0f; }
+        }
+
+        /// <inheritdoc/>
+        public override float HideDuration {
+            get { return 0f; }
+        }
+
+        /// <inheritdoc/>
+        public override bool IsVisible {
             get { return Group.alpha == FadeAlpha.y; }
         }
 
         /// <inheritdoc/>
-        public virtual float ShowDuration {
-            get { return 0f; }
-        }
-
-        /// <inheritdoc/>
-        public virtual float HideDuration {
-            get { return 0f; }
+        public override bool RealTime {
+            get { return HasParameter(Parameters.UnscaledTime); }
         }
 
         /// <summary>
@@ -175,13 +176,6 @@ namespace EnhancedFramework.UI {
         }
 
         /// <summary>
-        /// If true, fading will not be affected by time scale.
-        /// </summary>
-        public bool RealTime {
-            get { return HasParameter(Parameters.UnscaledTime); }
-        }
-
-        /// <summary>
         /// Get if this group uses a specific selectable or not.
         /// </summary>
         public bool UseSelectable {
@@ -190,129 +184,64 @@ namespace EnhancedFramework.UI {
         #endregion
 
         #region Behaviour
-        private static readonly List<Selectable> selectableBuffer = new List<Selectable>();
-        protected DelayHandler delay = default;
+        private static List<Selectable> selectableBuffer = new List<Selectable>();
 
         // -------------------------------------------
-        // General
+        // Core
         // -------------------------------------------
 
-        public virtual void Show(Action _onComplete = null) {
+        protected override void OnShow(bool _isInstant, Action<bool> _onComplete) {
+            FadeGroup(FadeAlpha.y, _isInstant, ControllerEvent.FullShow, true, _onComplete, true);
+        }
+
+        protected override void OnHide(bool _isInstant, Action<bool> _onComplete) {
+            FadeGroup(FadeAlpha.x, _isInstant, ControllerEvent.FullHide, true, _onComplete, true);
+        }
+
+        protected virtual void FadeGroup(float _value, bool _isInstant, ControllerEvent _event, bool _isEventDefault, Action<bool> _onComplete, bool _success) {
             CancelCurrentFade();
-            Group.alpha = FadeAlpha.y;
 
-            ToggleCanvas(true);
-            CallControllerEvent(ControllerEvent.FullShow, true);
+            if (Group.alpha != _value) {
 
-            OnSetVisibility(true, false);
-            _onComplete?.Invoke();
-        }
+                bool _isVisible = _value != FadeAlpha.x;
+                bool _select    = _isVisible && !IsVisible;
 
-        public virtual void Hide(Action _onComplete = null) {
-            CancelCurrentFade();
-            Group.alpha = FadeAlpha.x;
+                Group.alpha = _value;
 
-            ToggleCanvas(false);
-            CallControllerEvent(ControllerEvent.FullHide, true);
+                ToggleCanvas(_select);
+                CallControllerEvent(_event, _isEventDefault);
 
-            OnSetVisibility(false, false);
-            _onComplete?.Invoke();
-        }
-
-        public virtual void FadeInOut(float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action _onComplete = null) {
-            Show(OnShow);
-
-            // ----- Local Methods ----- \\
-
-            void OnShow() {
-                _onAfterFadeIn?.Invoke();
-                delay = Delayer.Call(_duration, OnWaitComplete, RealTime);
+                OnSetVisibility(_isVisible, _isInstant);
             }
 
-            void OnWaitComplete() {
-                _onBeforeFadeOut?.Invoke();
-                Hide(_onComplete);
-            }
-        }
-
-        public virtual void Fade(FadingMode _mode, Action _onComplete = null, float _inOutWaitDuration = .5f) {
-            switch (_mode) {
-                case FadingMode.Show:
-                    Show(_onComplete);
-                    break;
-
-                case FadingMode.Hide:
-                    Hide(_onComplete);
-                    break;
-
-                case FadingMode.FadeInOut:
-                    FadeInOut(_inOutWaitDuration, null, null, _onComplete);
-                    break;
-
-                case FadingMode.None:
-                default:
-                    break;
-            }
-        }
-
-        public virtual void Invert(Action _onComplete = null) {
-            SetVisibility(!IsVisible, _onComplete);
-        }
-
-        public virtual void SetVisibility(bool _isVisible, Action _onComplete = null) {
-            if (_isVisible) {
-                Show(_onComplete);
-            } else {
-                Hide(_onComplete);
-            }
+            _onComplete?.Invoke(_success);
         }
 
         // -------------------------------------------
-        // Instant
+        // Internal
         // -------------------------------------------
 
-        public virtual void Show(bool _isInstant, Action _onComplete = null) {
-            Show(_onComplete);
+        public override void Evaluate(float _time, bool _show) {
+            float _value = (_time == 0f) ? 0f : 1f;
+            SetFadeValue(_value, _show);
         }
 
-        public virtual void Hide(bool _isInstant, Action _onComplete = null) {
-            Hide(_onComplete);
-        }
-
-        public virtual void Fade(FadingMode _mode, bool _isInstant, Action _onComplete = null, float _inOutWaitDuration = .5f) {
-            switch (_mode) {
-                case FadingMode.Show:
-                    Show(_isInstant, _onComplete);
-                    break;
-
-                case FadingMode.Hide:
-                    Hide(_isInstant, _onComplete);
-                    break;
-
-                case FadingMode.FadeInOut:
-                    if (_isInstant) {
-                        Show(_isInstant, _onComplete);
-                        Hide(_isInstant, _onComplete);
-                    } else {
-                        FadeInOut(_inOutWaitDuration, null, null, _onComplete);
-                    }
-                    break;
-
-                case FadingMode.None:
-                default:
-                    break;
+        public override void SetFadeValue(float _value, bool _show) {
+            if (Group.alpha == _value) {
+                return;
             }
-        }
 
-        public virtual void Invert(bool _isInstant, Action _onComplete = null) {
-            SetVisibility(!IsVisible, _isInstant, _onComplete);
-        }
-
-        public virtual void SetVisibility(bool _isVisible, bool _isInstant, Action _onComplete = null) {
-            if (_isVisible) {
-                Show(_isInstant, _onComplete);
+            if (_value == 0f) {
+                Hide();
+            } else if (_value == 1f) {
+                Show();
             } else {
-                Hide(_isInstant, _onComplete);
+
+                // Set alpha.
+                CancelCurrentFade();
+                Group.alpha = Mathf.Lerp(FadeAlpha.x, FadeAlpha.y, _value);
+
+                ToggleCanvas(true);
             }
         }
 
@@ -320,37 +249,15 @@ namespace EnhancedFramework.UI {
         // Utility
         // -------------------------------------------
 
-        public virtual void Evaluate(float _time, bool _show) {
-            float _value = (_time == 0f) ? 0f : 1f;
-            SetFadeValue(_value, _show);
-        }
-
-        public virtual void SetFadeValue(float _value, bool _show) {
-            if (Group.alpha == _value) {
-                return;
-            }
-
-            if (_value == FadeAlpha.x) {
-                Hide();
-            } else if (_value == FadeAlpha.y) {
-                Show();
-            } else {
-
-                // Set alpha.
-                CancelCurrentFade();
-                Group.alpha = _value;
-
-                ToggleCanvas(true);
-            }
-        }
-
-        protected virtual void CancelCurrentFade() {
-            delay.Complete();
-        }
-
         protected void ToggleCanvas(bool _select = false) {
-            EnableCanvas(Group.alpha != FadeAlpha.x, _select);
-            SetInteractable(Group.alpha != FadeAlpha.x);
+            ToggleCanvas(Group.alpha, _select);
+        }
+
+        protected void ToggleCanvas(float _value, bool _select = false) {
+            bool _active = _value != FadeAlpha.x;
+
+            EnableCanvas   (_active, _select);
+            SetInteractable(_active);
         }
 
         public void EnableCanvas(bool _isVisible, bool _select) {
@@ -374,64 +281,79 @@ namespace EnhancedFramework.UI {
         }
 
         public void SetInteractable(bool _isInteractable) {
+            if (!IsInteractable) {
+                return;
+            }
 
-            if (IsInteractable && (Group.interactable != _isInteractable)) {
-                Group.interactable = _isInteractable;
+            CanvasGroup _group = Group;
+            if (_group.interactable == _isInteractable) {
+                return;
+            }
 
-                // Disable all children selectable.
-                if (EnableSelectable) {
+            // Update.
+            _group.interactable = _isInteractable;
 
-                    Group.GetComponentsInChildren(selectableBuffer);
+            // Disable all children selectable.
+            if (EnableSelectable) {
 
-                    foreach (Selectable _selectable in selectableBuffer) {
-                        _selectable.enabled = _isInteractable;
-                    }
+                ref List<Selectable> _span = ref selectableBuffer;
+                _group.GetComponentsInChildren(_span);
+
+                for (int i = _span.Count; i-- > 0;) {
+                    _span[i].enabled = _isInteractable;
                 }
             }
         }
+
+        // -------------------------------------------
+        // Callback(s)
+        // -------------------------------------------
 
         public void OnDisabled() {
             CallControllerEvent(ControllerEvent.FullHide, false);
         }
 
         protected virtual void CallControllerEvent(ControllerEvent _event, bool _isDefault = false) {
-            if (!UseController || (_isDefault && !UseDefaultControllerEvent)) {
+            if ((_event == ControllerEvent.None) || !UseController || (_isDefault && !UseDefaultControllerEvent)) {
                 return;
             }
 
+            FadingGroupController _controller = Controller;
+
             #if UNITY_EDITOR
-            if (!Application.isPlaying && !Controller.ExecuteInEditMode) {
+            if (!Application.isPlaying && !_controller.ExecuteInEditMode) {
                 return;
             }
             #endif
 
             // Call event.
             if (HasEvent(ControllerEvent.ShowStarted)) {
-                Controller.OnShowStarted(this);
+                _controller.OnShowStarted(this);
             }
 
             if (HasEvent(ControllerEvent.ShowPerformed)) {
-                Controller.OnShowPerformed(this);
+                _controller.OnShowPerformed(this);
             }
 
             if (HasEvent(ControllerEvent.ShowCompleted)) {
-                Controller.OnShowCompleted(this);
+                _controller.OnShowCompleted(this);
             }
 
             if (HasEvent(ControllerEvent.HideStarted)) {
-                Controller.OnHideStarted(this);
+                _controller.OnHideStarted(this);
             }
 
             if (HasEvent(ControllerEvent.HidePerformed)) {
-                Controller.OnHidePerformed(this);
+                _controller.OnHidePerformed(this);
             }
 
             if (HasEvent(ControllerEvent.HideCompleted)) {
-                Controller.OnHideCompleted(this);
+                _controller.OnHideCompleted(this);
             }
 
             // ----- Local Method ----- \\
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] 
             bool HasEvent(ControllerEvent _eventType) {
                 return _event.HasFlagUnsafe(_eventType);
             }
@@ -440,16 +362,17 @@ namespace EnhancedFramework.UI {
         protected void OnSetVisibility(bool _visible, bool _instant) {
 
             // Effects.
-            for (int i = 0; i < effects.Count; i++) {
+            ref List<FadingGroupEffect> _span = ref effects;
+            int _count = _span.Count;
 
-                FadingGroupEffect _effect = effects[i];
-                _effect.OnSetVisibility(_visible, _instant);
+            for (int i = 0; i < _count; i++) {
+                _span[i].OnSetVisibility(_visible, _instant);
             }
         }
         #endregion
 
         #region Effect
-        private readonly List<FadingGroupEffect> effects = new List<FadingGroupEffect>();
+        private List<FadingGroupEffect> effects = new List<FadingGroupEffect>();
 
         // -----------------------
 
@@ -504,16 +427,16 @@ namespace EnhancedFramework.UI {
 
         // -----------------------
 
-        public override bool IsVisible {
-            get { return base.IsVisible && !TransitionGroup.IsVisible; }
-        }
-
         public override float ShowDuration {
             get { return TransitionGroup.ShowDuration + ShowDelay + TransitionGroup.HideDuration; }
         }
 
         public override float HideDuration {
             get { return TransitionGroup.ShowDuration + HideDelay + TransitionGroup.HideDuration; }
+        }
+
+        public override bool IsVisible {
+            get { return base.IsVisible && !TransitionGroup.IsVisible; }
         }
 
         public override bool UseDefaultControllerEvent {
@@ -527,83 +450,222 @@ namespace EnhancedFramework.UI {
         #endregion
 
         #region Behaviour
-        public override void Show(Action _onComplete = null) {
+        private Action<bool> onFadeCompleteCallback = null;
 
+        private Action<bool> onShowTransitionCompleted = null;
+        private Action<bool> onShowTransitionPerformed = null;
+        private Action       onShowTransitionFaded     = null;
+
+        private Action<bool> onHideTransitionCompleted = null;
+        private Action<bool> onHideTransitionPerformed = null;
+        private Action       onHideTransitionFaded     = null;
+
+        private Action<bool> onStartFadeCompleteCallback = null;
+        private Action onStartFadedCallback = null;
+
+        private Action onStartFadeOutWaitCompelte = null;
+        private Action onStartFadeInWaitCompelte  = null;
+        private Action<bool> onStartFadeOutFaded  = null;
+        private Action<bool> onStartFadeInFaded   = null;
+
+        private Action<bool> onCompleteFadeCallback = null;
+        private Action<bool> onCompleteFade         = null;
+
+        // -------------------------------------------
+        // Core
+        // -------------------------------------------
+
+        protected override void OnShow(bool _isInstant, Action<bool> _onComplete = null) {
+
+            CancelCurrentFade();
+            onFadeCompleteCallback = _onComplete;
+
+            // Already active.
             if (IsVisible) {
-                OnComplete();
+                OnComplete(true);
                 return;
+            }
+
+            // Instant.
+            if (_isInstant) {
+
+                if (InstantOnlyAffectFadeIn) {
+
+                    // Only apply on fade in.
+                    TransitionGroup.Show(true);
+
+                } else {
+
+                    // Instant.
+                    base.OnShow(true, _onComplete);
+                    CallControllerEvent(ControllerEvent.FullShow);
+
+                    return;
+                }
             }
 
             CallControllerEvent(ControllerEvent.ShowStarted);
-            TransitionGroup.FadeInOut(ShowDelay, OnTransitionFaded, null, OnComplete);
 
-            // ----- Local Method ----- \\
-
-            void OnTransitionFaded() {
-                base.Show(OnShowed);
+            if (onShowTransitionFaded == null) {
+                onShowTransitionCompleted = OnComplete;
+                onShowTransitionFaded     = OnTransitionFaded;
             }
 
-            void OnShowed() {
+            TransitionGroup.FadeInOut(ShowDelay, onShowTransitionFaded, null, onShowTransitionCompleted);
+
+            // ----- Local Methods ----- \\
+
+            void OnTransitionFaded() {
+                onShowTransitionPerformed ??= OnShowed;
+                base.OnShow(false, onShowTransitionPerformed);
+            }
+
+            void OnShowed(bool _completed) {
+
+                // Failed.
+                if (!_completed) {
+                    OnFailed();
+                    return;
+                }
+
                 CallControllerEvent(ControllerEvent.ShowPerformed);
             }
 
-            void OnComplete() {
+            void OnComplete(bool _completed) {
+
+                // Failed.
+                if (!_completed) {
+                    OnFailed();
+                    return;
+                }
+
                 CallControllerEvent(ControllerEvent.ShowCompleted);
-                _onComplete?.Invoke();
+                onFadeCompleteCallback?.Invoke(_completed);
+            }
+
+            void OnFailed() {
+                onFadeCompleteCallback?.Invoke(false);
+                CallControllerEvent(ControllerEvent.CompleteShow);
             }
         }
 
-        public override void Hide(Action _onComplete = null) {
+        protected override void OnHide(bool _isInstant, Action<bool> _onComplete = null) {
 
+            CancelCurrentFade();
+            onFadeCompleteCallback = _onComplete;
+
+            // Already inactive.
             if (!IsVisible) {
-                OnComplete();
+                OnComplete(true);
                 return;
             }
 
-            CallControllerEvent(ControllerEvent.HideStarted);
-            TransitionGroup.FadeInOut(HideDelay, OnTransitionFaded, null, OnComplete);
+            // Instant.
+            if (_isInstant) {
 
-            // ----- Local Method ----- \\
+                if (InstantOnlyAffectFadeIn) {
 
-            void OnTransitionFaded() {
-                base.Hide(OnHided);
+                    // Only apply on fade in.
+                    TransitionGroup.Show(true);
+
+                } else {
+
+                    // Instant.
+                    base.OnHide(true, _onComplete);
+                    CallControllerEvent(ControllerEvent.FullHide);
+
+                    return;
+                }
             }
 
-            void OnHided() {
+            CallControllerEvent(ControllerEvent.HideStarted);
+
+            if (onHideTransitionFaded == null) {
+                onHideTransitionCompleted = OnComplete;
+                onHideTransitionFaded     = OnTransitionFaded;
+            }
+
+            TransitionGroup.FadeInOut(HideDelay, onHideTransitionFaded, null, onHideTransitionCompleted);
+
+            // ----- Local Methods ----- \\
+
+            void OnTransitionFaded() {
+                onHideTransitionPerformed ??= OnHided;
+                base.OnHide(false, onHideTransitionPerformed);
+            }
+
+            void OnHided(bool _completed) {
+
+                // Failed.
+                if (!_completed) {
+                    OnFailed();
+                    return;
+                }
+
                 CallControllerEvent(ControllerEvent.HidePerformed);
             }
 
-            void OnComplete() {
+            void OnComplete(bool _completed) {
+
+                // Failed.
+                if (!_completed) {
+                    OnFailed();
+                    return;
+                }
+
                 CallControllerEvent(ControllerEvent.HideCompleted);
-                _onComplete?.Invoke();
+                onFadeCompleteCallback?.Invoke(_completed);
+            }
+
+            void OnFailed() {
+                onFadeCompleteCallback?.Invoke(false);
+                CallControllerEvent(ControllerEvent.CompleteHide);
             }
         }
 
-        public override void Show(bool _isInstant, Action _onComplete = null) {
-            if (_isInstant && !InstantOnlyAffectFadeIn) {
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
 
-                base.Show(_onComplete);
-                CallControllerEvent(ControllerEvent.FullShow);
+        public override void CancelCurrentFade() {
+            base.CancelCurrentFade();
+            //TransitionGroup.CancelCurrentFade();
+        }
+
+        public override void Evaluate(float _time, bool _show) {
+            float _duration = (_show ? ShowDuration : HideDuration) - TransitionGroup.HideDuration;
+            float _alpha;
+
+            if (_time < TransitionGroup.ShowDuration) {
+
+                TransitionGroup.Evaluate(_time, true);
+                _alpha = _show ? 0f : 1f;
+
+            } else if (_time > _duration) {
+
+                TransitionGroup.Evaluate(_time - _duration, true);
+                _alpha = _show ? 1f : 0f;
 
             } else {
-                TransitionGroup.Show(_isInstant);
-                Show(_onComplete);
+
+                TransitionGroup.Show(true, null);
+                _alpha = 0f;
             }
+
+            // Fade.
+            FadeGroup(_alpha, true, ControllerEvent.None, false, null, true);
         }
 
-        public override void Hide(bool _isInstant, Action _onComplete = null) {
-            if (_isInstant && !InstantOnlyAffectFadeIn) {
+        public override void SetFadeValue(float _value, bool _show) {
+            float _duration = _show ? ShowDuration : HideDuration;
+            float _time     = _value * _duration;
 
-                base.Hide(_onComplete);
-                CallControllerEvent(ControllerEvent.FullHide);
-
-            } else {
-                TransitionGroup.Show(_isInstant);
-                Hide(_onComplete);
-            }
+            Evaluate(_time, _show);
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Transition
+        // -------------------------------------------
 
         /// <summary>
         /// Fades in the transition group, then show this group, and wait for the show duration.
@@ -611,25 +673,31 @@ namespace EnhancedFramework.UI {
         /// </summary>
         /// <param name="_onFaded">Called once the transition group has faded.</param>
         /// <param name="_onComplete">Called after waiting for this group show duration.</param>
-        public void StartFadeIn(Action _onFaded = null, Action _onComplete = null) {
-            CallControllerEvent(ControllerEvent.ShowStarted);
+        public void StartFadeIn(Action _onFaded = null, Action<bool> _onComplete = null) {
             CancelCurrentFade();
+            CallControllerEvent(ControllerEvent.ShowStarted);
 
-            TransitionGroup.Show(OnFaded);
+            onStartFadeCompleteCallback = _onComplete;
+            onStartFadedCallback        = _onFaded;
+
+            onStartFadeInFaded ??= OnFaded;
+            TransitionGroup.Show(onStartFadeInFaded);
 
             // ----- Local Methods ----- \\
 
-            void OnFaded() {
-                base.Show();
+            void OnFaded(bool _completed) {
+                base.OnShow(false, null);
                 CallControllerEvent(ControllerEvent.ShowPerformed);
 
-                _onFaded?.Invoke();
+                onStartFadedCallback?.Invoke();
+                hasDelayFailed = false;
 
-                delay = Delayer.Call(ShowDelay, OnWaitComplete, RealTime);
+                onStartFadeInWaitCompelte ??= OnWaitComplete;
+                delay = Delayer.Call(ShowDelay, onStartFadeInWaitCompelte, RealTime);
             }
 
             void OnWaitComplete() {
-                _onComplete?.Invoke();
+                onStartFadeCompleteCallback?.Invoke(true);
             }
         }
 
@@ -639,25 +707,31 @@ namespace EnhancedFramework.UI {
         /// </summary>
         /// <param name="_onFaded">Called once the transition group has faded.</param>
         /// <param name="_onComplete">Called after waiting for this group hide duration.</param>
-        public void StartFadeOut(Action _onFaded = null, Action _onComplete = null) {
-            CallControllerEvent(ControllerEvent.HideStarted);
+        public void StartFadeOut(Action _onFaded = null, Action<bool> _onComplete = null) {
             CancelCurrentFade();
+            CallControllerEvent(ControllerEvent.HideStarted);
 
-            TransitionGroup.Show(OnFaded);
+            onStartFadeCompleteCallback = _onComplete;
+            onStartFadedCallback        = _onFaded;
+
+            onStartFadeOutFaded ??= OnFaded;
+            TransitionGroup.Show(onStartFadeOutFaded);
 
             // ----- Local Methods ----- \\
 
-            void OnFaded() {
-                base.Hide();
+            void OnFaded(bool _completed) {
+                base.OnHide(false, null);
                 CallControllerEvent(ControllerEvent.HidePerformed);
 
-                _onFaded?.Invoke();
+                onStartFadedCallback?.Invoke();
+                hasDelayFailed = false;
 
-                delay = Delayer.Call(ShowDelay, OnWaitComplete, RealTime);
+                onStartFadeOutWaitCompelte ??= OnWaitComplete;
+                delay = Delayer.Call(ShowDelay, onStartFadeOutWaitCompelte, RealTime);
             }
 
             void OnWaitComplete() {
-                _onComplete?.Invoke();
+                onStartFadeCompleteCallback?.Invoke(true);
             }
         }
 
@@ -665,62 +739,55 @@ namespace EnhancedFramework.UI {
         /// Fades out the transition group.
         /// </summary>
         /// <param name="_onComplete">Called once fading has been completed.</param>
-        public void CompleteFade(Action _onComplete = null) {
-            TransitionGroup.Hide(OnComplete);
+        public void CompleteFade(Action<bool> _onComplete = null) {
+            onCompleteFadeCallback = _onComplete;
+
+            onCompleteFade ??= OnComplete;
+            TransitionGroup.Hide(onCompleteFade);
 
             // ----- Local Method ----- \\
 
-            void OnComplete() {
-
+            void OnComplete(bool _completed) {
                 CallControllerEvent(IsVisible ? ControllerEvent.ShowCompleted : ControllerEvent.HideCompleted);
-                _onComplete?.Invoke();
+                onCompleteFadeCallback?.Invoke(_completed);
             }
         }
         #endregion
     }
 
+    // ===== Derived ===== \\
+
     /// <summary>
-    /// <see cref="FadingObjectTransitionFadingGroup"/> that can used any <see cref="IFadingObject"/> as a transition.
+    /// <see cref="FadingGroup"/> with no transition, instantly updating its associted group value.
     /// </summary>
     [Serializable]
-    public class TransitionFadingGroup : FadingObjectTransitionFadingGroup {
-        #region Global Members
-        [Tooltip("The FadingGroup to use as a transition: performs a fade in, set this group visibility, then fades out")]
-        [SerializeField] private SerializedInterface<IFadingObject> transitionGroup = new SerializedInterface<IFadingObject>();
-
-        // -----------------------
-
-        public override IFadingObject TransitionGroup {
-            get { return transitionGroup.Interface;  }
-        }
-        #endregion
-    }
+    public sealed class InstantFadingGroup : FadingGroup { }
 
     /// <summary>
     /// Class wrapper for a fading <see cref="CanvasGroup"/> instance, using tweening.
     /// </summary>
     [Serializable]
-    public class TweeningFadingGroup : FadingGroup {
+    public sealed class TweeningFadingGroup : FadingGroup {
         #region Global Members
         [Space(10f)]
 
+        [Tooltip("Total duration used to fade in this group (in seconds)")]
         [SerializeField, Enhanced, Range(0f, 10f)] private float fadeInDuration = .5f;
         #if TWEENING
+        [Tooltip("Ease preset used to fade in this group")]
         [SerializeField] private Ease fadeInEase = Ease.OutSine;
 
         [Space(5f)]
         #endif
 
+        [Tooltip("Total duration used to fade out this group (in seconds)")]
         [SerializeField, Enhanced, Range(0f, 10f)] private float fadeOutDuration = .5f;
         #if TWEENING
+        [Tooltip("Ease preset used to fade out this group")]
         [SerializeField] private Ease fadeOutEase = Ease.InSine;
         #endif
 
         // -----------------------
-
-        public override bool UseDefaultControllerEvent {
-            get { return false; }
-        }
 
         public override float ShowDuration {
             get { return fadeInDuration; }
@@ -729,97 +796,85 @@ namespace EnhancedFramework.UI {
         public override float HideDuration {
             get { return fadeOutDuration; }
         }
+
+        public override bool UseDefaultControllerEvent {
+            get { return false; }
+        }
         #endregion
 
         #region Behaviour
-        private Action<float> setter = null;
+        private Action<bool> onFadeCompleteCallback = null;
+        private Action<bool> onFadeComplete         = null;
+        private Action<float> onFadeSetValue        = null;
 
         private TweenHandler tween = default;
-        private float targetAlpha = 0f;
-
-        public Action<float> Setter {
-            get {
-                setter ??= Set;
-                return setter;
-            }
-        }
+        private float targetAlpha  = 0f;
 
         // -------------------------------------------
-        // General
+        // Core
         // -------------------------------------------
 
-        public override void Show(Action _onComplete = null) {
-
-            // Already faded.
-            if ((Group.alpha == FadeAlpha.y) && !tween.IsValid) {
-
-                _onComplete?.Invoke();
-                return;
-            }
-
-            #if TWEENING
-            Fade(FadeAlpha.y, fadeInDuration, fadeInEase, _onComplete);
-            #else
-            Fade(FadeAlpha.y, fadeInDuration, _onComplete);
-            #endif
-
-            OnSetVisibility(true, false);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected override void OnShow(bool _isInstant, Action<bool> _onComplete) {
+            OnShow(_isInstant, fadeInDuration,
+                    #if TWEENING
+                    fadeInEase,
+                    #endif
+                    _onComplete);
         }
 
-        public override void Hide(Action _onComplete = null) {
-
-            // Already faded.
-            if ((Group.alpha == FadeAlpha.x) && !tween.IsValid) {
-
-                _onComplete?.Invoke();
-                return;
-            }
-
-            #if TWEENING
-            Fade(FadeAlpha.x, fadeOutDuration, fadeOutEase, _onComplete);
-            #else
-            Fade(FadeAlpha.x, fadeOutDuration, _onComplete);
-            #endif
-
-            OnSetVisibility(false, false);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected override void OnHide(bool _isInstant, Action<bool> _onComplete) {
+            OnHide(_isInstant, fadeOutDuration,
+                    #if TWEENING
+                    fadeOutEase,
+                    #endif
+                    _onComplete);
         }
 
-        public override void Show(bool _isInstant, Action _onComplete = null) {
-            if (_isInstant) {
-                Fade(FadeAlpha.y, _onComplete);
-                OnSetVisibility(true, true);
-            } else {
-                Show(_onComplete);
-            }
+        #if TWEENING
+        // -------------------------------------------
+        // Tween
+        // -------------------------------------------
+
+        /// <param name="_duration">Fading duration (in seconds).</param>
+        /// <param name="_ease">Fading ease preset curve.</param>
+        /// <inheritdoc cref="FadingObject.Show(bool, Action{bool})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Show(float _duration, Ease _ease, Action<bool> _onComplete = null) {
+            OnShow(false, _duration,
+                    #if TWEENING
+                    _ease,
+                    #endif
+                    _onComplete);
         }
 
-        public override void Hide(bool _isInstant, Action _onComplete = null) {
-            if (_isInstant) {
-                Fade(FadeAlpha.x, _onComplete);
-                OnSetVisibility(false, true);
-            } else {
-                Hide(_onComplete);
-            }
+        /// <param name="_duration">Fading duration (in seconds).</param>
+        /// <param name="_ease">Fading ease preset curve.</param>
+        /// <inheritdoc cref="FadingObject.Hide(bool, Action{bool})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Hide(float _duration, Ease _ease, Action<bool> _onComplete = null) {
+            OnHide(false, _duration,
+                    #if TWEENING
+                    _ease,
+                    #endif
+                    _onComplete);
         }
+        #endif
 
         // -------------------------------------------
-        // Utility
+        // Internal
         // -------------------------------------------
 
         public override void Evaluate(float _time, bool _show) {
-            float _value;
 
-            if (_show) {
-                _value = (fadeInDuration != 0f) ? (_time / fadeInDuration) : 0f;
-            } else {
-                _value = (fadeOutDuration != 0f) ? (_time / fadeOutDuration) : 0f;
-            }
+            float _duration = _show ? fadeInDuration : fadeOutDuration;
+            float _value    = (_duration != 0f) ? Mathf.Clamp01(_time / _duration) : 0f;
 
-            SetFadeValue(Mathf.Clamp(_value, 0f, 1f), _show);
+            SetFadeValue(_value, _show);
         }
 
         public override void SetFadeValue(float _value, bool _show) {
-            CancelCurrentFade();
             float _alpha;
 
             #if TWEENING
@@ -829,138 +884,137 @@ namespace EnhancedFramework.UI {
                 _alpha = DOVirtual.EasedValue(FadeAlpha.y, FadeAlpha.x, _value, fadeOutEase);
             }
             #else
-            _alpha = _value;
+            if (_show) {
+                _alpha = Mathf.Lerp(FadeAlpha.x, FadeAlpha.y, _value);
+            } else {
+                _alpha = Mathf.Lerp(FadeAlpha.y, FadeAlpha.x, _value);
+            }
             #endif
 
-            if (Group.alpha == _alpha) {
-                return;
-            }
+            ControllerEvent _event = (_alpha == FadeAlpha.y) ? ControllerEvent.FullShow
+                                   : (_alpha == FadeAlpha.x) ? ControllerEvent.FullHide
+                                   : ControllerEvent.None;
 
-            bool _visible = IsVisible;
-
-            Group.alpha = _alpha;
-            ToggleCanvas((_value != FadeAlpha.x) && !_visible);
+            FadeGroup(_alpha, true, _event, false, null, true);
         }
 
-        protected override void CancelCurrentFade() {
+        public override void CancelCurrentFade() {
             base.CancelCurrentFade();
 
-            // Stop without complete.
+            // Stop, without complete.
             tween.Stop();
         }
-
-        // -------------------------------------------
-        // Tween
-        // -------------------------------------------
-
-        #if TWEENING
-        /// <param name="_duration">Fade duration (in seconds).</param>
-        /// <param name="_ease">Fade ease.</param>
-        /// <inheritdoc cref="Show(Action)"/>
-        public void Show(float _duration, Ease _ease, Action _onComplete = null) {
-            Fade(FadeAlpha.y, _duration, _ease, _onComplete);
-            OnSetVisibility(true, false);
-        }
-
-        /// <param name="_duration">Fade duration (in seconds).</param>
-        /// <param name="_ease">Fade ease.</param>
-        /// <inheritdoc cref="Hide(Action)"/>
-        public void Hide(float _duration, Ease _ease, Action _onComplete = null) {
-            Fade(FadeAlpha.x, _duration, _ease, _onComplete);
-            OnSetVisibility(false, false);
-        }
-        #endif
 
         // -------------------------------------------
         // Fade
         // -------------------------------------------
 
-        private void Fade(float _alpha, Action _onComplete) {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void OnShow(bool _isInstant, float _duration,
+                            #if TWEENING
+                            Ease _ease,
+                            #endif
+                            Action<bool> _onComplete) {
+            OnFade(_isInstant, FadeAlpha.y, _duration,
+                    #if TWEENING
+                    _ease,
+                    #endif
+                    ControllerEvent.FullShow, _onComplete);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void OnHide(bool _isInstant, float _duration,
+                            #if TWEENING
+                            Ease _ease,
+                            #endif
+                            Action<bool> _onComplete) {
+            OnFade(_isInstant, FadeAlpha.x, _duration,
+                    #if TWEENING
+                    _ease,
+                    #endif
+                    ControllerEvent.FullHide, _onComplete);
+        }
+
+        private void OnFade(bool _isInstant, float _value, float _duration,
+                            #if TWEENING
+                            Ease _ease,
+                            #endif
+                            ControllerEvent _event,
+                            Action<bool> _onComplete) {
+
+            // Instant.
+            if (_isInstant || (_duration == 0f)) {
+                FadeGroup(_value, true, _event, false, _onComplete, true);
+                return;
+            }
+
+            // Register on callback if targetting the same alpha.
+            if ((targetAlpha == _value) && tween.GetHandle(out EnhancedTween _tween)) {
+                _tween.AddCallback(_onComplete);
+                return;
+            }
 
             CancelCurrentFade();
+            onFadeCompleteCallback = _onComplete;
 
             // Already faded.
-            if (Group.alpha == _alpha) {
-
-                _onComplete?.Invoke();
+            if (Group.alpha == _value) {
+                OnStopped(true);
                 return;
             }
 
-            Group.alpha = _alpha;
+            bool _isVisible = _value != FadeAlpha.x;
+            bool _select    = _isVisible && !IsVisible;
 
-            ToggleCanvas(_alpha == FadeAlpha.y);
-            CallControllerEvent(IsVisible ? ControllerEvent.FullShow : ControllerEvent.FullHide);
+            ToggleCanvas(_value, _select);
+            CallControllerEvent((_value == FadeAlpha.y) ? ControllerEvent.ShowStarted : ControllerEvent.HideStarted);
 
-            _onComplete?.Invoke();
-        }
+            OnSetVisibility(_isVisible, false);
 
-        private void Fade(float _alpha, float _duration, Action _onComplete) {
-            DoFade(_alpha, CreateTween, _onComplete);
-
-            // ----- Local Method ----- \\
-
-            TweenHandler CreateTween(Action<float> _setter, Action<bool> _onStopped) {
-                return Core.Tweener.Tween(Group.alpha, _alpha, _setter, _duration, RealTime, _onStopped);
+            // Delegates.
+            if (onFadeSetValue == null) {
+                onFadeSetValue = OnSet;
+                onFadeComplete = OnStopped;
             }
-        }
-
-        #if TWEENING
-        private void Fade(float _alpha, float _duration, Ease _ease, Action _onComplete) {
-            DoFade(_alpha, CreateTween, _onComplete);
-
-            // ----- Local Method ----- \\
-
-            TweenHandler CreateTween(Action<float> _setter, Action<bool> _onStopped) {
-                return Core.Tweener.Tween(Group.alpha, _alpha, _setter, _duration, _ease, RealTime, _onStopped);
-            }
-        }
-        #endif
-
-        // -----------------------
-
-        private void DoFade(float _alpha, Func<Action<float>, Action<bool>, TweenHandler> _tweener, Action _onComplete) {
-
-            // Register callback if targetting to same alpha.
-            if ((targetAlpha == _alpha) && tween.GetHandle(out EnhancedTween _tween)) {
-
-                _tween.OnStopped += (b) => _onComplete?.Invoke();
-                return;
-            }
-
-            CancelCurrentFade();
-
-            EnableCanvas(true, _alpha != FadeAlpha.x);
-            SetInteractable(true);
-
-            if (Group.alpha == _alpha) {
-
-                OnStopped();
-                return;
-            }
-
-            CallControllerEvent((_alpha == FadeAlpha.y) ? ControllerEvent.ShowStarted : ControllerEvent.HideStarted);
 
             // Tween.
-            targetAlpha = _alpha;
-            tween = _tweener(Setter, OnStopped);
+            targetAlpha = _value;
+            tween = Core.Tweener.Tween(Group.alpha, _value, onFadeSetValue, _duration,
+                                       #if TWEENING
+                                       _ease,
+                                       #endif
+                                       RealTime, onFadeComplete);
 
-            // ----- Local Method ----- \\
+            // ----- Local Methods ----- \\
 
-            void OnStopped(bool _completed = false) {
+            void OnSet(float _value) {
+                Group.alpha = _value;
+            }
+
+            void OnStopped(bool _completed) {
 
                 ToggleCanvas(false);
                 CallControllerEvent(IsVisible ? ControllerEvent.CompleteShow : ControllerEvent.CompleteHide);
 
-                _onComplete?.Invoke();
+                onFadeCompleteCallback?.Invoke(_completed);
             }
         }
+        #endregion
+    }
 
-        // -------------------------------------------
-        // Delegate
-        // -------------------------------------------
+    /// <summary>
+    /// <see cref="FadingObjectTransitionFadingGroup"/> that can used any <see cref="IFadingObject"/> as a transition.
+    /// </summary>
+    [Serializable]
+    public sealed class TransitionFadingGroup : FadingObjectTransitionFadingGroup {
+        #region Global Members
+        [Tooltip("The FadingGroup to use as a transition: performs a fade in, set this group visibility, then fades out")]
+        [SerializeField] private SerializedInterface<IFadingObject> transitionGroup = new SerializedInterface<IFadingObject>();
 
-        private void Set(float _value) {
-            Group.alpha = _value;
+        // -----------------------
+
+        public override IFadingObject TransitionGroup {
+            get { return transitionGroup.Interface;  }
         }
         #endregion
     }

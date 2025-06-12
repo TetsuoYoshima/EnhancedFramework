@@ -43,6 +43,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         /// <param name="_name"><inheritdoc cref="Name" path="/summary"/></param>
         /// <param name="_description"><inheritdoc cref="Description" path="/summary"/></param>
         /// <param name="_startEnabled"><inheritdoc cref="StartEnabled" path="/summary"/></param>
+        /// <param name="_order"><inheritdoc cref="Order" path="/summary"/></param>
         /// <inheritdoc cref="DeveloperConsoleCommandAttribute"/>
         public DeveloperConsoleMemberWatcherAttribute(string _name, string _description, bool _startEnabled = true, int _order = 0) {
             Name         = _name;

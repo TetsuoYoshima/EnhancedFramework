@@ -5,6 +5,7 @@
 // ================================================================================== //
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -146,13 +147,15 @@ namespace EnhancedFramework.Core {
 
             manager = _manager;
 
-            int _capacity = pool.Capacity;
-            for (int i = pool.Count; i < _capacity; i++) {
+            ref List<T> _span = ref pool.collection;
+            int _capacity = _span.Capacity;
+
+            for (int i = _span.Count; i < _capacity; i++) {
 
                 T _instance = CreateInstance();
 
                 AssertInstanceInPool(_instance);
-                pool.Add(_instance);
+                _span.Add(_instance);
             }
         }
         #endregion
@@ -196,13 +199,14 @@ namespace EnhancedFramework.Core {
         /// <inheritdoc cref="IObjectPool.ClearPool"/>
         public void ClearPool(int _capacity = 1) {
             // Destroy instances.
-            for (int i = pool.Count; i-- > 0;) {
-                manager.DestroyInstance(pool[i]);
+            ref List<T> _span = ref pool.collection;
+            for (int i = _span.Count; i-- > 0;) {
+                manager.DestroyInstance(_span[i]);
             }
 
             // Reset capacity.
-            pool.Clear();
-            pool.Capacity = _capacity;
+            _span.Clear();
+            _span.Capacity = _capacity;
         }
 
         // -------------------------------------------

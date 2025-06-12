@@ -49,12 +49,12 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
+            StoreResult = null;
             GameObject  = null;
+            FalseEvent  = null;
+            EveryFrame  = false;
             MultiTags   = null;
             TrueEvent   = null;
-            FalseEvent  = null;
-            StoreResult = null;
-            EveryFrame  = false;
         }
 
         public override void OnEnter() {
@@ -73,7 +73,9 @@ namespace EnhancedFramework.PlayMaker {
             CompareTags();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void CompareTags() {
             GameObject _gameObject = Fsm.GetOwnerDefaultTarget(GameObject);

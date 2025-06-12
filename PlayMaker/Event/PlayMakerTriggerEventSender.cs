@@ -21,7 +21,7 @@ namespace EnhancedFramework.PlayMaker {
 
         [SerializeField, Enhanced, Required] private PlayMakerFSM fsm = null;
 
-        [Space(5f)]
+        [Space(10f)]
 
         [Tooltip("Event to call on trigger enter")]
         [SerializeField] private string enterEventName = string.Empty;

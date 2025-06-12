@@ -15,6 +15,8 @@ namespace EnhancedFramework.Core.GameStates {
     /// </summary>
     internal interface IPauseChronosState { }
 
+    // ===== Base ===== \\
+
     /// <summary>
     /// Base <see cref="GameState{T}"/> to inherit your own pause state from.
     /// </summary>
@@ -54,6 +56,8 @@ namespace EnhancedFramework.Core.GameStates {
         }
         #endregion
     }
+
+    // ===== Derived ===== \\
 
     /// <summary>
     /// Defualt state used to completely pauses the game and set its chronos to 0 while active.

@@ -15,6 +15,8 @@ using DG.Tweening;
 using Min = EnhancedEditor.MinAttribute;
 
 namespace EnhancedFramework.Core {
+    // ===== Base ===== \\
+    
     /// <summary>
     /// Base class for ease/curve values.
     /// <br/> Prefer using <see cref="EaseValue"/>/<see cref="CurveValue"/> instead of this.
@@ -110,6 +112,8 @@ namespace EnhancedFramework.Core {
         #endregion
     }
 
+    // ===== Derived ===== \\
+
     #if DOTWEEN_ENABLED
     /// <summary>
     /// Wrapper utility class for an ease curve type value.
@@ -132,11 +136,9 @@ namespace EnhancedFramework.Core {
         public EaseValue(Vector2 _range, float _duration, Ease _ease) : base(_range, _duration) {
             Ease = _ease;
         }
+        #endregion
 
-        // -------------------------------------------
-        // Core
-        // -------------------------------------------
-
+        #region Behaviour
         protected override float DoEvaluate(float _percent, float _coef) {
             return DOVirtual.EasedValue(Range.x, Range.y * _coef, _percent, Ease);
         }
@@ -165,11 +167,9 @@ namespace EnhancedFramework.Core {
         public CurveValue(Vector2 _range, float _duration, AnimationCurve _curve) : base(_range, _duration) {
             Curve = _curve;
         }
+        #endregion
 
-        // -------------------------------------------
-        // Core
-        // -------------------------------------------
-
+        #region Behaviour
         protected override float DoEvaluate(float _percent, float _coef) {
             return Mathf.Lerp(Range.x, Range.y * _coef, Curve.Evaluate(_percent));
         }
@@ -244,7 +244,7 @@ namespace EnhancedFramework.Core {
             float _duration = Duration * _coef;
             _time = _wrapper.GetTime(DecreaseCurve);
 
-            return base.DoEvaluate(_time / _duration, _coef);
+            return DoEvaluate(_time / _duration, _coef);
         }
         #endregion
     }

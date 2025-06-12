@@ -105,12 +105,12 @@ namespace EnhancedFramework.Core {
         // Feedback
         // -------------------------------------------
 
-        protected override void DoPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
+        protected override void DoPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
             // Instant play (delay managed in the player).
-            OnPlay(_transform, _position, _options);
+            OnPlay(_options, _transform, _position);
         }
 
-        protected override void OnPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
+        protected override void OnPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
             switch (_options) {
 
                 // Play at position.

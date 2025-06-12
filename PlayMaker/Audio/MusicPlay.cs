@@ -37,9 +37,9 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            Music = null;
-            Instant = false;
             StopOnExit = false;
+            Instant    = false;
+            Music      = null;
         }
 
         public override void OnEnter() {

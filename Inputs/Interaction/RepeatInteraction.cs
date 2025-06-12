@@ -25,9 +25,17 @@ namespace EnhancedFramework.Inputs {
     #endif
     public sealed class RepeatInteraction : IInputInteraction {
         #region Global Members
+        // -------------------------------------------
+        // Constructor(s)
+        // -------------------------------------------
+
         static RepeatInteraction() {
             InputSystem.RegisterInteraction<RepeatInteraction>();
         }
+
+        // -------------------------------------------
+        // Init
+        // -------------------------------------------
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void InitializeInPlayer() { } // Will execute the static constructor as a side effect.
@@ -35,10 +43,10 @@ namespace EnhancedFramework.Inputs {
 
         #region Behaviour
         [Tooltip("Initial delay before starting repeating the input (in seconds)")]
-        [Min(0f)] public float Delay = 0.5f;
+        [Min(0f)] public float Delay = .5f;
 
         [Tooltip("Rate at wich to repeat this input after initial delay (in seconds)")]
-        [Min(0f)] public float Rate = 0.1f;
+        [Min(0f)] public float Rate = .1f;
 
         [Tooltip("Amount of this input elapsed interaction required before using rate duration instead of delay")]
         [Min(0f)] public int ElapsedBeforeRate = 2;
@@ -72,7 +80,7 @@ namespace EnhancedFramework.Inputs {
         public void Process(ref InputInteractionContext _context) {
 
             bool _actuated = _context.ControlIsActuated(PressPointOrDefault);
-            InputControl _control = _context.control;
+            InputControl _control  = _context.control;
             InputActionPhase phase = _context.phase;
 
             // Detect if input is stuck.
@@ -90,8 +98,7 @@ namespace EnhancedFramework.Inputs {
             bool isStuck = (_control != null) && (((currentControl != null)     && (currentControl != _control))
                                               || ((currentControl == _control)  && (phase == InputActionPhase.Performed) && _actuated && !_context.timerHasExpired));
 
-            if (isStuck)
-            {
+            if (isStuck) {
                 Reset();
                 phase = InputActionPhase.Waiting;
             }
@@ -153,10 +160,8 @@ namespace EnhancedFramework.Inputs {
         }
 
         public void Reset() {
-
-            // Reset state.
             currentControl = null;
-            elapsedCount = 0;
+            elapsedCount   = 0;
         }
         #endregion
     }

@@ -14,10 +14,10 @@ namespace EnhancedFramework.UI {
     /// Set the size of the button text.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Size UI Effect"), DisallowMultipleComponent]
+    [AddComponentMenu(MenuPath + "Size [UI Effect]"), DisallowMultipleComponent]
     public sealed class SizeUIEffect : EnhancedSelectableEffect {
         #region Global Members
-        [Section("Size Effect")]
+        [Section("Size [UI Effect]")]
 
         [SerializeField, Enhanced, Required] private TextMeshProUGUI text = null;
 

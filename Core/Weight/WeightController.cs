@@ -196,8 +196,14 @@ namespace EnhancedFramework.Core {
         private Action<float> fadeWeightSetter = null;
         private Action<float> weightSetter     = null;
 
+        private Action<bool> onFadeOutComplete = null;
+        private Action<bool> onStopped         = null;
+
+        private Action<bool> onFadeOutCallback = null;
+        private Action<bool> onStoppedCallback = null;
+
         private TweenHandler weightTween = default;
-        private TweenHandler fadeTween = default;
+        private TweenHandler fadeTween   = default;
 
         private int fadeState = 0;
 
@@ -208,7 +214,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_object">Object to wrap within this controller.</param>
         /// <param name="_weight">Initial weight of this object (between 1 and 0).</param>
-        /// <param name="_instant"><inheritdoc cref="FadeIn(bool)" path="/param[@name='_instant']"/></param>
+        /// <param name="_instant"><inheritdoc cref="FadeIn" path="/param[@name='_instant']"/></param>
         public WeightHandler<T> Initialize(T _object, float _weight, bool _instant) {
 
             Stop(true);
@@ -216,7 +222,7 @@ namespace EnhancedFramework.Core {
             blendObject = _object;
 
             fadeWeight = 0f;
-            weight = Mathf.Clamp01(_weight);
+            weight     = Mathf.Clamp01(_weight);
 
             SetState(State.Active);
             FadeIn(_instant);
@@ -240,7 +246,7 @@ namespace EnhancedFramework.Core {
             }
 
             weightTween.Pause();
-            fadeTween.Pause();
+            fadeTween  .Pause();
 
             SetState(State.Paused);
         }
@@ -256,7 +262,7 @@ namespace EnhancedFramework.Core {
             }
 
             weightTween.Resume();
-            fadeTween.Resume();
+            fadeTween  .Resume();
 
             SetState(State.Active);
         }
@@ -273,7 +279,10 @@ namespace EnhancedFramework.Core {
                 return;
             }
 
-            FadeOut(_instant, OnComplete);
+            onStopped ??= OnComplete;
+            onStoppedCallback = _onComplete;
+
+            FadeOut(_instant, onStopped);
 
             // ----- Local Method ----- \\
 
@@ -282,13 +291,13 @@ namespace EnhancedFramework.Core {
                 if (_success) {
 
                     weightTween.Stop();
-                    fadeTween.Stop();
+                    fadeTween  .Stop();
 
                     id = 0;
                     SetState(State.Inactive);
                 }
 
-                _onComplete?.Invoke(_success);
+                onStoppedCallback?.Invoke(_success);
             }
         }
 
@@ -357,10 +366,16 @@ namespace EnhancedFramework.Core {
 
         private void Fade(float _min, float _max, float _duration, AnimationCurve _curve, Action<bool> _onComplete = null) {
 
-            fadeWeightSetter ??= SetWeight;
+            if (fadeWeightSetter == null) {
 
+                fadeWeightSetter  = SetWeight;
+                onFadeOutComplete = OnComplete;
+            }
+            
             fadeTween.Stop();
-            fadeTween = Tweener.Tween(_min, _max, fadeWeightSetter, _duration, _curve, true, OnComplete);
+
+            onFadeOutCallback = _onComplete;
+            fadeTween = Tweener.Tween(_min, _max, fadeWeightSetter, _duration, _curve, true, onFadeOutComplete);
 
             // ----- Local Methods ----- \\
 
@@ -369,9 +384,8 @@ namespace EnhancedFramework.Core {
             }
 
             void OnComplete(bool _success) {
-
                 fadeState = 0;
-                _onComplete?.Invoke(_success);
+                onFadeOutCallback?.Invoke(_success);
             }
         }
         #endregion

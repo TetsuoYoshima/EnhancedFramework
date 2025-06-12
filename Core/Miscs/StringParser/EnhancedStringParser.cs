@@ -57,25 +57,24 @@ namespace EnhancedFramework.Core {
     public static class EnhancedStringParserUtility {
         #region Markup
         private struct Markup {
-
+            public EnhancedStringParser Parser;
             public int StartTagIndex;
             public int StopTagIndex;
 
-            public EnhancedStringParser Parser;
-
-            // -----------------------
+            // -------------------------------------------
+            // Constructor(s)
+            // -------------------------------------------
 
             public Markup(EnhancedStringParser _parser, int _startTagIndex, int _stopTagIndex) {
-
-                Parser = _parser;
                 StartTagIndex = _startTagIndex;
                 StopTagIndex  = _stopTagIndex;
+                Parser        = _parser;
             }
         }
         #endregion
 
         #region Initialization
-        private static readonly List<EnhancedStringParser> allParsers = new List<EnhancedStringParser>();
+        private static List<EnhancedStringParser> allParsers = new List<EnhancedStringParser>();
 
         // -------------------------------------------
         // Initialization
@@ -126,7 +125,6 @@ namespace EnhancedFramework.Core {
         /// <returns>Parsed <see cref="string"/> value.</returns>
         /// <inheritdoc cref="ParseRef(ref string)"/>
         public static string Parse(string _input) {
-
             ParseRef(ref _input);
             return _input;
         }
@@ -137,19 +135,21 @@ namespace EnhancedFramework.Core {
         /// <param name="_input">Input <see cref="string"/> value to parse.</param>
         public static void ParseRef(ref string _input) {
 
+            StringBuilder _builder = contentBuilder;
+            List<Markup> _markups = markups;
+
             // Reset data.
-            ResetCache();
+            ResetCache(_builder, _markups);
 
             int _startTagIndex = -1;
             int _stopTagIndex  = -1;
             bool _isClosure = false;
 
-            StringBuilder _builder = contentBuilder;
             _builder.Append(_input);
 
             for (int i = 0; i < _builder.Length; i++) {
 
-                char _char = contentBuilder[i];
+                char _char = _builder[i];
 
                 switch (_char) {
 
@@ -178,12 +178,12 @@ namespace EnhancedFramework.Core {
                             if (_isClosure) {
 
                                 // Parse content.
-                                DoParse(_builder, _startTagIndex, _stopTagIndex, _parser);
+                                DoParse(_builder, _startTagIndex, _stopTagIndex, _markups, _parser);
 
                             } else {
 
                                 // Store parser.
-                                markups.Add(new Markup(_parser, _startTagIndex, _stopTagIndex));
+                                _markups.Add(new Markup(_parser, _startTagIndex, _stopTagIndex));
                             }
                         } else {
                             //Debug.LogError("No Parser => " + allParsers.Count + " - " + _isClosure);
@@ -191,7 +191,7 @@ namespace EnhancedFramework.Core {
 
                         // Reset.
                         _startTagIndex = -1;
-                        _stopTagIndex = -1;
+                        _stopTagIndex  = -1;
                         _isClosure = false;
 
                         break;
@@ -202,27 +202,27 @@ namespace EnhancedFramework.Core {
             }
 
             // Update.
-            _input = contentBuilder.ToString();
+            _input = _builder.ToString();
 
             // Clear data.
-            ResetCache();
+            ResetCache(_builder, _markups);
 
-            // ----- Local Method ----- \\
+            // ----- Local Methods ----- \\
 
-            static void ResetCache() {
-
-                contentBuilder.Clear();
-                markups.Clear();
+            static void ResetCache(StringBuilder _builder, List<Markup> _markups) {
+                _builder.Clear();
+                _markups.Clear();
             }
 
-            static bool DoParse(StringBuilder _builder, int _startIndex, int _stopIndex, EnhancedStringParser _parser) {
+            static bool DoParse(StringBuilder _builder, int _startIndex, int _stopIndex, List<Markup> _markups, EnhancedStringParser _parser) {
 
-                tagBuilder.Clear();
+                StringBuilder _tagBuilder = tagBuilder;
+                _tagBuilder.Clear();
 
                 // Find last associated markup.
-                for (int k = markups.Count; k-- > 0;) {
+                for (int k = _markups.Count; k-- > 0;) {
 
-                    Markup _markup = markups[k];
+                    Markup _markup = _markups[k];
                     if (_markup.Parser != _parser) {
                         continue;
                     }
@@ -231,16 +231,16 @@ namespace EnhancedFramework.Core {
                     int beginLength = (_markup.StopTagIndex - _markup.StartTagIndex) + 1;
 
                     for (int i = _markup.StartTagIndex + 1; i < _markup.StopTagIndex; i++) {
-                        tagBuilder.Append(_builder[i]);
+                        _tagBuilder.Append(_builder[i]);
                     }
 
                     int _endLength = (_stopIndex - _startIndex) + 1;
-                    _builder.Remove(_startIndex, _endLength);               // Remove end tag.
 
+                    _builder.Remove(_startIndex, _endLength);               // Remove end tag.
                     _builder.Remove(_markup.StartTagIndex, beginLength);    // Remove begin tag.
 
-                    _parser.Parse(_builder, _markup.StartTagIndex, _startIndex - (beginLength + 1), tagBuilder);
-                    markups.RemoveAt(k);
+                    _parser.Parse(_builder, _markup.StartTagIndex, _startIndex - (beginLength + 1), _tagBuilder);
+                    _markups.RemoveAt(k);
 
                     return true;
                 }
@@ -263,16 +263,17 @@ namespace EnhancedFramework.Core {
 
             // Empty.
             if ((_stopIndex - _startIndex) <= 0) {
-
                 _parser = null;
                 return false;
             }
 
             // Find parser.
-            int _count = allParsers.Count;
+            ref List<EnhancedStringParser> _span = ref allParsers;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                _parser = allParsers[i];
+                _parser = _span[i];
                 if (_parser.IdentifyTag(_builder, _startIndex, _stopIndex)) {
                     return true;
                 }

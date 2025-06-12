@@ -33,8 +33,8 @@ namespace EnhancedFramework.Inputs {
         [Space(10f)]
         #endif
 
-        [SerializeField] private InputActionEnhancedAsset[] inputs  = new InputActionEnhancedAsset[0];
-        [SerializeField] private InputMapEnhancedAsset[] maps       = new InputMapEnhancedAsset[0];
+        [SerializeField] private InputActionEnhancedAsset[] inputs = new InputActionEnhancedAsset[0];
+        [SerializeField] private InputMapEnhancedAsset[] maps      = new InputMapEnhancedAsset[0];
 
         // -----------------------
 
@@ -69,12 +69,15 @@ namespace EnhancedFramework.Inputs {
 
             // Inputs may not be serialized with a consistant reference,
             // so use the database to retrieve their target input within.
-            for (int i = 0; i < inputs.Length; i++) {
-                inputs[i].Initialize(this);
+
+            ref InputActionEnhancedAsset[] _inputSpan = ref inputs;
+            for (int i = _inputSpan.Length; i-- > 0;) {
+                _inputSpan[i].Initialize(this);
             }
 
-            for (int i = 0; i < maps.Length; i++) {
-                maps[i].Initialize(this);
+            ref InputMapEnhancedAsset[] _mapSpan = ref maps;
+            for (int i = _mapSpan.Length; i-- > 0;) {
+                _mapSpan[i].Initialize(this);
             }
         }
         #endregion
@@ -101,9 +104,11 @@ namespace EnhancedFramework.Inputs {
         public InputMapEnhancedAsset GetMapAt(int _index) {
             return maps[_index];
         }
-        #endregion
 
-        #region Editor Tool
+        // -------------------------------------------
+        // Editor Tool(s)
+        // -------------------------------------------
+
         /// <summary>
         /// Seupts this database <see cref="InputActionEnhancedAsset"/> and <see cref="InputMapEnhancedAsset"/>.
         /// </summary>

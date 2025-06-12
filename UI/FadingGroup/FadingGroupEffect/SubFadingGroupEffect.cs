@@ -16,7 +16,7 @@ namespace EnhancedFramework.UI {
     /// <see cref="FadingGroupEffect"/> controlling various sub groups according to a source <see cref="FadingObjectBehaviour"/> state.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Sub Fading Group Effect")]
+    [AddComponentMenu(MenuPath + "Sub Fading Group(s) [Fading Group Effect]")]
     #pragma warning disable
     public sealed class SubFadingGroupEffect : FadingGroupEffect {
         /// <summary>
@@ -114,7 +114,7 @@ namespace EnhancedFramework.UI {
         }
 
         #region Global Members
-        [Section("Sub Fading Group(s)"), PropertyOrder(0)]
+        [Section("Sub Fading Group(s) [Fading Group Effect]"), PropertyOrder(0)]
 
         [Tooltip("All sub groups controlled by the source")]
         [SerializeField] private SubGroup[] subGroups = new SubGroup[] { new SubGroup() };
@@ -124,8 +124,11 @@ namespace EnhancedFramework.UI {
         internal protected override void OnSetVisibility(bool _visible, bool _instant) {
 
             // Sub group(s).
-            for (int i = 0; i < subGroups.Length; i++) {
-                subGroups[i].Update(_visible, _instant);
+            ref SubGroup[] _span = ref subGroups;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Update(_visible, _instant);
             }
         }
         #endregion

@@ -5,6 +5,8 @@
 // ================================================================================== //
 
 namespace EnhancedFramework.Core {
+    // ===== Weight Controller ===== \\
+
     /// <summary>
     /// Base audio <see cref="WeightController{T}"/> class.
     /// </summary>
@@ -44,6 +46,8 @@ namespace EnhancedFramework.Core {
         }
         #endregion
     }
+
+    // ===== Components ===== \\
 
     /// <summary>
     /// Base audio-related <see cref="EnhancedActivatorBehaviour"/>.

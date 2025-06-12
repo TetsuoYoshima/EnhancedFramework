@@ -45,17 +45,17 @@ namespace EnhancedFramework.Core {
         [Space(10f)]
 
         [Tooltip("If true, automatically loops when reaching the end")]
-        [SerializeField, Enhanced, DisplayName("Loop")] private bool isLooping  = false;
+        [SerializeField, Enhanced, DisplayName("Loop")] private bool isLooping = false;
 
         [Tooltip("If true, do not fade out the audio when completing a loop")]
-        [SerializeField, Enhanced, DisplayName("Loop Seemless")] private bool loopSeemless  = true;
+        [SerializeField, Enhanced, DisplayName("Loop Seemless")] private bool loopSeemless = true;
 
         [Space(5f)]
 
         [Tooltip("If true, keeps this audio playing while performing a scene loading operation")]
         [SerializeField, Enhanced, DisplayName("Persistent")] private bool isPersistent = false;
 
-        [Tooltip("If true, ensures that only one instance is playing at a time")]
+        [Tooltip("If true, ensures that only one instance of this sound is playing at a time")]
         [SerializeField] private bool avoidDuplicate = false;
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
@@ -66,10 +66,10 @@ namespace EnhancedFramework.Core {
         [Tooltip("Overall default volume of this audio")]
         [SerializeField, Enhanced, Range(0f, 1f)] private float volume          = 1f;
 
-        [Tooltip("Frequency range of this audio; use this to slow down or speed it up")]
+        [Tooltip("Frequency range of this audio - use this to slow down or speed it up")]
         [SerializeField, Enhanced, MinMax(-3, 3f)] private Vector2 pitch        = Vector2.one;
 
-        [Tooltip("Determines how much this audio is affected by 3D spatialisation calculations (attenuation, doppler etc); 0.0 makes it full 2D, 1.0 makes it full 3D")]
+        [Tooltip("Determines how much this audio is affected by 3D spatialisation calculations (attenuation, doppler etc) - 0.0 makes it full 2D, 1.0 makes it full 3D")]
         [SerializeField, Enhanced, Range(0f, 1f)] private float spatialBlend    = 1f;
 
         [Tooltip("Determines how much of the signal this audio is mixing into the global reverb associated with zones." +
@@ -79,7 +79,7 @@ namespace EnhancedFramework.Core {
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
         [Tooltip("Duration used for fading in this audio (use 0 for instant)")]
-        [SerializeField, Enhanced, Range(0f, 5f)] private float fadeInDuration = 0f;
+        [SerializeField, Enhanced, Range(0f, 5f)] private float fadeInDuration  = 0f;
 
         [Tooltip("Duration used for fading out this audio (use 0 for instant)")]
         [SerializeField, Enhanced, Range(0f, 5f)] private float fadeOutDuration = 0f;
@@ -123,11 +123,12 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public float ClipDuration {
             get {
+                ref AudioClip[] _span = ref clips.Array;
                 float _duration = 0f;
 
-                for (int i = 0; i < clips.Count; i++) {
+                for (int i = _span.Length; i-- > 0;) {
 
-                    AudioClip _clip = clips[i];
+                    AudioClip _clip = _span[i];
 
                     if (_clip != null) {
                         _duration = (_duration == 0f)
@@ -152,16 +153,17 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public float SampleDuration {
             get {
-                if (clips.Count == 0) {
+                ref AudioClip[] _span = ref clips.Array;
+                int _count = _span.Length;
+
+                if (_count == 0) {
                     return 0f;
                 }
 
                 AudioClip _audio = null;
+                for (int i = 0; i < _count; i++) {
 
-                for (int i = 0; i < clips.Count; i++) {
-
-                    AudioClip _clip = clips[i];
-
+                    AudioClip _clip = _span[i];
                     if ((_clip != null) && (_audio.IsNull() || (_audio.length < _clip.length))) {
                         _audio = _clip;
                     }
@@ -303,12 +305,12 @@ namespace EnhancedFramework.Core {
         // Feedback
         // -------------------------------------------
 
-        protected override void DoPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
+        protected override void DoPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
             // Instant play (delay managed in the player).
-            OnPlay(_transform, _position, _options);
+            OnPlay(_options,  _transform, _position);
         }
 
-        protected override void OnPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
+        protected override void OnPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
             switch (_options) {
 
                 // Play at position.
@@ -334,7 +336,7 @@ namespace EnhancedFramework.Core {
         }
 
         // -------------------------------------------
-        // Buttons
+        // Button(s)
         // -------------------------------------------
 
         /// <summary>
@@ -364,7 +366,7 @@ namespace EnhancedFramework.Core {
 
         #region Event
         private const float EventDelay = .2f;
-        private readonly UnscaledCooldown eventCooldown = new UnscaledCooldown();
+        private readonly UnscaledCooldown eventCooldown = new UnscaledCooldown(); // 1 frame cooldown.
 
         // -----------------------
 
@@ -410,7 +412,7 @@ namespace EnhancedFramework.Core {
             _source.ignoreListenerPause = AudioManager.Instance.IgnorePause(mixerGroup);
             _source.time = PlayRange.x;
 
-            _settings.ApplyValues(_source);
+            _settings.ApplyValuesOn(_source);
         }
 
         /// <summary>

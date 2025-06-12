@@ -142,11 +142,11 @@ namespace EnhancedFramework.Localization {
 
         [Space(10f)]
 
-        [Tooltip("All asset tables to load on game init")]
-        [SerializeField] private LocalizedAssetTable[] generalAssets = new LocalizedAssetTable[0];
-
         [Tooltip("All string tables to load on game init")]
         [SerializeField] private LocalizedStringTable[] generalStrings = new LocalizedStringTable[0];
+
+        [Tooltip("All asset tables to load on game init")]
+        [SerializeField] private LocalizedAssetTable[] generalAssets = new LocalizedAssetTable[0];
 
         // -----------------------
 
@@ -175,12 +175,14 @@ namespace EnhancedFramework.Localization {
             }
 
             // Load.
-            for (int i = 0; i < generalAssets.Length; i++) {
-                LoadAssetTable(generalAssets[i].TableReference);
+            ref LocalizedAssetTable[] _assetSpan = ref generalAssets;
+            for (int i = _assetSpan.Length; i-- > 0;) {
+                LoadAssetTable(_assetSpan[i].TableReference);
             }
 
-            for (int i = 0; i < generalStrings.Length; i++) {
-                LoadStringTable(generalStrings[i].TableReference);
+            ref LocalizedStringTable[] _stringSpan = ref generalStrings;
+            for (int i = _stringSpan.Length; i-- > 0;) {
+                LoadStringTable(_stringSpan[i].TableReference);
             }
 
             // ----- Local Method ----- \\
@@ -262,10 +264,10 @@ namespace EnhancedFramework.Localization {
             this.LogWarningMessage($"Changed Locale to \'{_locale?.name}\'");
 
             // Update localizables.
-            List<ILocalizer> _localizableSpan = localizables.collection;
+            ref List<ILocalizer> _span = ref localizables.collection;
 
-            for (int i = _localizableSpan.Count; i-- > 0;) {
-                _localizableSpan[i].OnLocaleChanged(_locale);
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].OnLocaleChanged(_locale);
             }
         }
         #endregion
@@ -354,10 +356,8 @@ namespace EnhancedFramework.Localization {
         /// </summary>
         /// <param name="_tables">All string tables to release.</param>
         public void ReleaseStringTables(IList<TableReference> _tables) {
-
-            for (int i = 0; i < _tables.Count; i++) {
-                TableReference _table = _tables[i];
-                ReleaseStringTable(_table);
+            for (int i = _tables.Count; i-- > 0;) {
+                ReleaseStringTable(_tables[i]);
             }
         }
 
@@ -366,10 +366,8 @@ namespace EnhancedFramework.Localization {
         /// </summary>
         /// <param name="_tables">All asset tables to release.</param>
         public void ReleaseAssetTables(IList<TableReference> _tables) {
-
-            for (int i = 0; i < _tables.Count; i++) {
-                TableReference _table = _tables[i];
-                ReleaseAssetTable(_table);
+            for (int i = _tables.Count; i-- > 0;) {
+                ReleaseAssetTable(_tables[i]);
             }
         }
 

@@ -227,7 +227,7 @@ namespace EnhancedFramework.Core {
         #if UNITY_EDITOR
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
-        [SerializeField, Enhanced, DrawMember(nameof(IsEffectPlaying)), ReadOnly] private bool isPlaying = false;
+        [SerializeField, Enhanced, DrawMember(nameof(IsEffectPlaying)),    ReadOnly] private bool isPlaying = false;
         [SerializeField, Enhanced, DrawMember(nameof(AliveParticleCount)), ReadOnly] private int aliveParticleCount = 0;
         #endif
 
@@ -236,8 +236,10 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public bool IsEffectPlaying {
             get {
-                foreach (var _effect in visualEffects) {
-                    if (_effect.HasAnySystemAwake()) {
+                ref VisualEffect[] _span = ref visualEffects;
+                for (int i = _span.Length; i-- > 0;) {
+
+                    if (_span[i].HasAnySystemAwake()) {
                         return true;
                     }
                 }
@@ -252,8 +254,10 @@ namespace EnhancedFramework.Core {
         public int AliveParticleCount {
             get {
                 int _count = 0;
-                foreach (var _particle in visualEffects) {
-                    _count += _particle.aliveParticleCount;
+
+                ref VisualEffect[] _span = ref visualEffects;
+                for (int i = _span.Length; i-- > 0;) {
+                    _count += _span[i].aliveParticleCount;
                 }
 
                 return _count;
@@ -293,14 +297,16 @@ namespace EnhancedFramework.Core {
                 case State.Playing:
 
                     bool _isAlive = false;
-                    for (int i = 0; i < visualEffects.Length; i++) {
+                    ref VisualEffect[] _span = ref visualEffects;
 
-                        VisualEffect _effect = visualEffects[i];
+                    for (int i = 0; i < _span.Length; i++) {
+
+                        VisualEffect _effect = _span[i];
                         bool _isPlaying = _effect.HasAnySystemAwake() || (_effect.aliveParticleCount > 0);
 
                         if (_isPlaying) {
 
-                            _isAlive = true;
+                            _isAlive  = true;
                             hasPlayed = true;
                             break;
                         }
@@ -406,8 +412,11 @@ namespace EnhancedFramework.Core {
                 // Play.
                 SetState(State.Playing);
 
-                for (int i = 0; i < visualEffects.Length; i++) {
-                    visualEffects[i].Play();
+                ref VisualEffect[] _span = ref visualEffects;
+                int _count = _span.Length;
+
+                for (int i = 0; i < _count; i++) {
+                    _span[i].Play();
                 }
             }
         }
@@ -453,8 +462,11 @@ namespace EnhancedFramework.Core {
                 case State.Paused:
                     SetState(State.Playing);
 
-                    for (int i = 0; i < visualEffects.Length; i++) {
-                        VisualEffect _effect = visualEffects[i];
+                    ref VisualEffect[] _span = ref visualEffects;
+                    int _count = _span.Length;
+
+                    for (int i = 0; i < _count; i++) {
+                        VisualEffect _effect = _span[i];
 
                         if (_effect.pause) {
                             _effect.pause = false;
@@ -504,8 +516,11 @@ namespace EnhancedFramework.Core {
             // Pause.
             SetState(State.Paused);
 
-            for (int i = 0; i < visualEffects.Length; i++) {
-                visualEffects[i].pause = true;
+            ref VisualEffect[] _span = ref visualEffects;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].pause = true;
             }
 
             return true;
@@ -534,8 +549,11 @@ namespace EnhancedFramework.Core {
                     break;
             }
 
-            for (int i = 0; i < visualEffects.Length; i++) {
-                visualEffects[i].Stop();
+            ref VisualEffect[] _span = ref visualEffects;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Stop();
             }
 
             switch (_behaviour) {
@@ -588,8 +606,9 @@ namespace EnhancedFramework.Core {
                     break;
             }
 
-            for (int i = visualEffects.Length; i-- > 0;) {
-                visualEffects[i].SendEvent(_eventId);
+            ref VisualEffect[] _span = ref visualEffects;
+            for (int i = _span.Length; i-- > 0;) {
+                _span[i].SendEvent(_eventId);
             }
 
             return true;
@@ -634,9 +653,9 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_transform"><see cref="Transform"/> reference to follow.</param>
         public void FollowTransform(Transform _transform) {
-            followTransform = true;
-            followOffset = Vector3.zero;
             referenceTransform = _transform;
+            followTransform    = true;
+            followOffset       = Vector3.zero;
 
             UpdateFollow();
         }
@@ -653,9 +672,9 @@ namespace EnhancedFramework.Core {
         /// Stops following any reference <see cref="Transform"/>.
         /// </summary>
         public void StopFollowTransform() {
-            followTransform = false;
-            followOffset = Vector3.zero;
             referenceTransform = null;
+            followTransform    = false;
+            followOffset       = Vector3.zero;
         }
 
         /// <summary>

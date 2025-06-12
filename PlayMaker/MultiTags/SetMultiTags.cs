@@ -37,7 +37,7 @@ namespace EnhancedFramework.PlayMaker {
             base.Reset();
 
             GameObject = null;
-            MultiTags = null;            
+            MultiTags  = null;            
         }
 
         public override void OnEnter() {
@@ -47,7 +47,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void SetTags() {
             GameObject _gameObject = Fsm.GetOwnerDefaultTarget(GameObject);

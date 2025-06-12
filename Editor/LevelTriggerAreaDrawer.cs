@@ -21,7 +21,9 @@ namespace EnhancedFramework.Editor {
         #region Content
         private static LevelTriggerArea[] triggerAreas = new LevelTriggerArea[0];
 
-        // -----------------------
+        // -------------------------------------------
+        // Constructor(s)
+        // -------------------------------------------
 
         static LevelTriggerAreaDrawer() {
 
@@ -52,14 +54,15 @@ namespace EnhancedFramework.Editor {
 
         private static void OnSceneGUI(SceneView _sceneView) {
 
-            for (int i = triggerAreas.Length; i-- > 0;) {
+            ref LevelTriggerArea[] _span = ref triggerAreas;
+            for (int i = _span.Length; i-- > 0;) {
 
-                if (triggerAreas[i] == null) {
-                    ArrayUtility.RemoveAt(ref triggerAreas, i);
+                if (_span[i] == null) {
+                    ArrayUtility.RemoveAt(ref _span, i);
                     continue;
                 }
 
-                triggerAreas[i].DrawArea();
+                _span[i].DrawArea();
             }
         }
 

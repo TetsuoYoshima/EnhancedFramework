@@ -48,13 +48,17 @@ namespace EnhancedFramework.PlayMaker {
         #endregion
 
         #region Behaviour
+        private Action<bool> onFadeComplete = null;
+
+        // -----------------------
+
         public override void Reset() {
             base.Reset();
 
-            FadingMode      = null;
-            Instant         = null;
-            WaitDuration    = null;
-            CompletedEvent  = null;
+            CompletedEvent = null;
+            WaitDuration   = null;
+            FadingMode     = null;
+            Instant        = null;
         }
 
         public override void OnEnter() {
@@ -64,23 +68,27 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void Fade() {
             IFadingObject _fadingObject = FadingObject;
 
             if (_fadingObject != null) {
-                PerformFade(_fadingObject, (FadingMode)FadingMode.Value, Instant.Value, OnComplete, WaitDuration.Value);
+
+                onFadeComplete ??= OnComplete;
+                PerformFade(_fadingObject, (FadingMode)FadingMode.Value, Instant.Value, onFadeComplete, WaitDuration.Value);
             }
 
             // ----- Local Method ----- \\
 
-            void OnComplete() {
+            void OnComplete(bool _completed) {
                 Fsm.Event(CompletedEvent);
             }
         }
 
-        protected virtual void PerformFade(IFadingObject _fadingObject, FadingMode _fadingMode, bool _instant, Action _onComplete, float _waitDuration) {
+        protected virtual void PerformFade(IFadingObject _fadingObject, FadingMode _fadingMode, bool _instant, Action<bool> _onComplete, float _waitDuration) {
             _fadingObject.Fade((FadingMode)FadingMode.Value, Instant.Value, _onComplete, WaitDuration.Value);
         }
         #endregion

@@ -87,15 +87,24 @@ namespace EnhancedFramework.Core.GameStates {
         private PolymorphValue<GameStateOverride> stateOverride = new PolymorphValue<GameStateOverride>(SerializedTypeConstraint.None,
                                                                                                         typeof(DefaultGameStateOverride));
 
-        /// <summary>
-        /// The game state being currently active and enabled.
-        /// </summary>
-        [field: SerializeReference, Space(10f)]
-        public GameState CurrentState { get; private set; } = null;
+        [Tooltip("The game state being currently active and enabled")]
+        [SerializeField] private GameState currentState = null;
 
         [SerializeField, Enhanced, ReadOnly] private BufferR<Reference<GameState>> states = new BufferR<Reference<GameState>>();
 
         // -----------------------
+
+        private List<GameState> pushPendingStates = new List<GameState>();
+        private List<GameState> popPendingStates  = new List<GameState>();
+
+        // -----------------------
+
+        /// <summary>
+        /// The game state being currently active and enabled.
+        /// </summary>
+        public GameState CurrentState {
+            get { return currentState; }
+        }
 
         /// <summary>
         /// Current global states override shared values.
@@ -110,9 +119,6 @@ namespace EnhancedFramework.Core.GameStates {
         public int GameStateCount {
             get { return states.Count; }
         }
-
-        private readonly List<GameState> pushPendingStates = new List<GameState>();
-        private readonly List<GameState> popPendingStates  = new List<GameState>();
         #endregion
 
         #region Enhanced Behaviour
@@ -128,12 +134,9 @@ namespace EnhancedFramework.Core.GameStates {
             // Push and pop pending states.
             bool _refresh = false;
 
-            List<GameState> _span;
-            int _spanCount;
-
             // Push.
-            _span = pushPendingStates;
-            _spanCount = _span.Count;
+            ref List<GameState> _span = ref pushPendingStates;
+            int _spanCount = _span.Count;
 
             if (_spanCount != 0) {
 
@@ -146,7 +149,7 @@ namespace EnhancedFramework.Core.GameStates {
             }
 
             // Pop.
-            _span = popPendingStates;
+            _span = ref popPendingStates;
             _spanCount = _span.Count;
 
             if (_spanCount != 0) {
@@ -164,12 +167,12 @@ namespace EnhancedFramework.Core.GameStates {
             }
 
             // Current state update.
-            CurrentState.OnUpdate();
+            currentState.OnUpdate();
         }
         #endregion
 
         #region Override Callbacks
-        private readonly EnhancedCollection<IGameStateOverrideCallback> overrideCallbacks = new EnhancedCollection<IGameStateOverrideCallback>();
+        private readonly List<IGameStateOverrideCallback> overrideCallbacks = new List<IGameStateOverrideCallback>();
 
         // -----------------------
 
@@ -236,10 +239,12 @@ namespace EnhancedFramework.Core.GameStates {
         /// <returns>True if a state of this type could be found and was removed, false otherwise.</returns>
         public bool PopState<T>() where T : GameState {
 
-            int _count = states.Count;
+            ref var _span = ref states;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                if (states.GetKeyAt(i).Value is T) {
+                if (_span.GetKeyAt(i).Value is T) {
                     PopStateAt(i, true);
                     return true;
                 }
@@ -257,10 +262,12 @@ namespace EnhancedFramework.Core.GameStates {
                 return false;
             }
 
-            int _count = states.Count;
+            ref var _span = ref states;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                if (states.GetKeyAt(i).Value.GetType() == _stateType) {
+                if (_span.GetKeyAt(i).Value.GetType() == _stateType) {
                     PopStateAt(i, true);
                     return true;
                 }
@@ -273,8 +280,10 @@ namespace EnhancedFramework.Core.GameStates {
         /// Pops and removes all non-persistent <see cref="GameState"/> from the stack.
         /// </summary>
         public void PopNonPersistentStates() {
-            for (int i = states.Count; i-- > 0;) {
-                GameState _state = states.GetKeyAt(i);
+            ref var _span = ref states;
+
+            for (int i = _span.Count; i-- > 0;) {
+                GameState _state = _span.GetKeyAt(i);
 
                 if (!_state.IsPersistent) {
                     PopState(_state, false);
@@ -367,9 +376,9 @@ namespace EnhancedFramework.Core.GameStates {
             // Current state update.
             GameState _current = states.Value;
 
-            if (_current != CurrentState) {
-                GameState _previous = CurrentState;
-                CurrentState = _current;
+            if (_current != currentState) {
+                GameState _previous = currentState;
+                currentState = _current;
 
                 this.LogMessage($"Set new state \"{_current}\"");
 
@@ -385,9 +394,10 @@ namespace EnhancedFramework.Core.GameStates {
             float _chronos = 1f;
             int _priority = -1;
 
-            for (int i = states.Count; i-- > 0;) {
+            ref var _span = ref states;
+            for (int i = _span.Count; i-- > 0;) {
 
-                GameState _state = states.GetKeyAt(i);
+                GameState _state = _span.GetKeyAt(i);
                 _state.OnGameStateOverride(_override);
 
                 if (_state.OverrideChronos(out float _chronosTemp, out int _priorityTemp) && (_priorityTemp >= _priority)) {
@@ -400,11 +410,11 @@ namespace EnhancedFramework.Core.GameStates {
             _override.Apply();
 
             // Callbacks.
-            List<IGameStateOverrideCallback> _callbacksSpan = overrideCallbacks.collection;
-            int _count = _callbacksSpan.Count;
+            List<IGameStateOverrideCallback> _callbackSpan = overrideCallbacks;
+            int _count = _callbackSpan.Count;
 
             for (int i = 0; i < _count; i++) {
-                _callbacksSpan[i].OnGameStateOverride(_override);
+                _callbackSpan[i].OnGameStateOverride(_override);
             }
         }
         #endregion
@@ -437,18 +447,22 @@ namespace EnhancedFramework.Core.GameStates {
         /// <returns>True if any <see cref="GameState"/> of the given type is active, false otherwise.</returns>
         public bool IsActive(Type _type, out GameState _state, bool _inherit = true) {
 
-            int _count = states.Count;
+            ref var _stateSpan = ref states;
+            int _count = _stateSpan.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                _state = states[i].First.Value;
+                _state = _stateSpan[i].First.Value;
                 if (IsType(_state)) {
                     return true;
                 }
             }
 
-            _count = pushPendingStates.Count;
+            ref List<GameState> _pendingSpan = ref pushPendingStates;
+            _count = _pendingSpan.Count;
+
             for (int i = 0; i < _count; i++) {
-                _state = pushPendingStates[i];
+                _state = _pendingSpan[i];
 
                 if (IsType(_state)) {
                     return true;
@@ -479,11 +493,12 @@ namespace EnhancedFramework.Core.GameStates {
         /// <returns>True if any <see cref="GameState"/> of the given type is currently on the stack, false otherwise.</returns>
         public bool IsOnStack(Type _type, out GameState _state) {
 
-            int _count = states.Count;
+            ref var _stateSpan = ref states;
+            int _count = _stateSpan.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                _state = states[i].First.Value;
-
+                _state = _stateSpan[i].First.Value;
                 if (_state.GetType() == _type) {
                     return true;
                 }

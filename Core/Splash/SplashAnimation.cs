@@ -17,6 +17,8 @@ using Min   = EnhancedEditor.MinAttribute;
 using Range = EnhancedEditor.RangeAttribute;
 
 namespace EnhancedFramework.Core {
+    // ===== Base ===== \\
+
     /// <summary>
     /// Base class for a <see cref="SplashManager"/> animation.
     /// </summary>
@@ -29,6 +31,8 @@ namespace EnhancedFramework.Core {
         public abstract IEnumerator Play();
         #endregion
     }
+
+    // ===== Derived ===== \\
 
     /// <summary>
     /// Waits for a given amount of time, in second(s).
@@ -151,14 +155,13 @@ namespace EnhancedFramework.Core {
 
             // ----- Local Method ----- \\
 
-            void OnComplete() {
+            void OnComplete(bool _completed) {
                 _isWaiting = false;
             }
         }
         #endregion
     }
 
-    #if DOTWEEN_ENABLED
     /// <summary>
     /// Fades the 
     /// </summary>
@@ -186,11 +189,10 @@ namespace EnhancedFramework.Core {
 
             // ----- Local Method ----- \\
 
-            void OnComplete() {
+            void OnComplete(bool _completed) {
                 _isWaiting = false;
             }
         }
         #endregion
     }
-    #endif
 }

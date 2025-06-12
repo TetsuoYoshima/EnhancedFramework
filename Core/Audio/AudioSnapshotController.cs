@@ -21,11 +21,13 @@ namespace EnhancedFramework.Core {
         [Tooltip("Snapshot wrapped in this object")]
         [SerializeField, Enhanced, Required] private AudioSnapshotAsset snaphsot = null;
 
-        [Tooltip("Priority of this snapshot. Only the snapshot with the highest priority is active")]
-        [SerializeField, Enhanced, ShowIf(nameof(overridePriority)), Range(0f, 99f)] private int priority = 0;
+        [Space(5f)]
 
         [Tooltip("If true, overrides the default priority of this snaphsot")]
         [SerializeField] private bool overridePriority = false;
+
+        [Tooltip("Priority of this snapshot. Only the snapshot with the highest priority is active")]
+        [SerializeField, Enhanced, ShowIf(nameof(overridePriority)), Range(0f, 99f)] private int priority = 0;
 
         [Space(5f)]
 

@@ -37,7 +37,7 @@ namespace EnhancedFramework.Editor {
                                                                          "The reference object has been destroyed or could not be found");
 
         private static readonly Dictionary<string, Pair<EnhancedObjectID, CrossSceneObject>> references = new  Dictionary<string, Pair<EnhancedObjectID, CrossSceneObject>>();
-        private static readonly SceneAsset sceneAssetBuffer = null;
+        private static readonly SceneAsset sceneAssetBuffer = new SceneAsset();
 
         // -----------------------
 

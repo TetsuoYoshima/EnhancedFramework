@@ -12,10 +12,10 @@ namespace EnhancedFramework.UI {
     /// Sets the position and size of a <see cref="RectTransform"/>.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "RectTransform UI Effect")]
+    [AddComponentMenu(MenuPath + "RectTransform [UI Effect]")]
     public sealed class RectTransformUIEffect : EnhancedSelectableEffect {
         #region Global Members
-        [Section("Rect Transform UI Effect")]
+        [Section("Rect Transform [UI Effect]")]
 
         [Tooltip("RectTransform instance to set the position and size")]
         [SerializeField, Enhanced, Required] private RectTransform source = null;
@@ -30,7 +30,8 @@ namespace EnhancedFramework.UI {
         #endregion
 
         #region Behaviour
-        private static readonly Vector3[] cornerBuffer = new Vector3[4];
+        private const int CornerBufferSize = 4;
+        private static Vector3[] cornerBuffer = new Vector3[CornerBufferSize];
 
         // -----------------------
 
@@ -41,20 +42,21 @@ namespace EnhancedFramework.UI {
                 return;
             }
 
+            RectTransform _source = source;
+
             // Clockwise: Bottom-Left, Top-Left, Top-Right, Bottom-Right.
-            target.GetWorldCorners(cornerBuffer);
+            ref Vector3[] _buffer = ref cornerBuffer;
+            target.GetWorldCorners(_buffer);
 
-            for (int i = 0; i < cornerBuffer.Length; i++) {
-
-                Vector3 _corner = cornerBuffer[i];
-                cornerBuffer[i] = source.InverseTransformPoint(_corner);
+            for (int i = 0; i < CornerBufferSize; i++) {
+                _buffer[i] = _source.InverseTransformPoint(_buffer[i]);
             }
 
-            Vector3 _size       = cornerBuffer[2] - cornerBuffer[0];
-            Vector2 _position   = source.anchoredPosition + (Vector2)((cornerBuffer[0] + (_size / 2f)));
+            Vector3 _size     = _buffer[2] - _buffer[0];
+            Vector2 _position = _source.anchoredPosition + (Vector2)((_buffer[0] + (_size / 2f)));
 
-            source.anchoredPosition = _position;
-            source.sizeDelta = _size;
+            _source.anchoredPosition = _position;
+            _source.sizeDelta = _size;
         }
         #endregion
     }

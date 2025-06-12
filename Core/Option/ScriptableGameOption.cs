@@ -39,7 +39,7 @@ namespace EnhancedFramework.Core.Option {
         #endregion
 
         #region Scriptable Object
-#if UNITY_EDITOR
+        #if UNITY_EDITOR
         // -------------------------------------------
         // Editor
         // -------------------------------------------
@@ -50,7 +50,6 @@ namespace EnhancedFramework.Core.Option {
 
         protected override void OnValidate() {
             base.OnValidate();
-
             RefreshValues();
         }
 
@@ -101,7 +100,6 @@ namespace EnhancedFramework.Core.Option {
         /// </summary>
         /// <returns>This option default value.</returns>
         internal BaseGameOption CreateOption() {
-
             BaseGameOption _option = Activator.CreateInstance(optionType)    as BaseGameOption;
             return EnhancedUtility.CopyObjectContent(defaultOption, _option) as BaseGameOption;
         }

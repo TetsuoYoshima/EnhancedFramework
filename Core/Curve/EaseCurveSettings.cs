@@ -15,6 +15,8 @@ using DG.Tweening;
 using Min = EnhancedEditor.MinAttribute;
 
 namespace EnhancedFramework.Core {
+    // ===== Base ===== \\
+    
     /// <summary>
     /// Base class for valueless ease/curve settings.
     /// <br/> Prefer using <see cref="EaseSettings"/>/<see cref="CurveSettings"/> instead of this.
@@ -29,6 +31,8 @@ namespace EnhancedFramework.Core {
         [Enhanced, Min(0f)] public float Delay = 0f;
         #endregion
     }
+
+    // ===== Derived ===== \\
 
     #if DOTWEEN_ENABLED
     /// <summary>

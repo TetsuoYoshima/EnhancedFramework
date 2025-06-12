@@ -30,7 +30,6 @@ namespace EnhancedFramework.PlayMaker {
 
         protected override void OnPlay() {
             base.OnPlay();
-
             fsm.SendEvent(PlayEventName);
         }
         #endregion

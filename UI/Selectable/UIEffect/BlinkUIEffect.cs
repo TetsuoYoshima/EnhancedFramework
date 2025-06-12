@@ -17,7 +17,7 @@ namespace EnhancedFramework.UI {
     /// Blinks an array <see cref="Graphic"/> color.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Blink UI Effect")]
+    [AddComponentMenu(MenuPath + "Blink [UI Effect]")]
     public sealed class BlinkUIEffect : EnhancedSelectableEffect {
         #region Blink
         [Serializable]
@@ -30,7 +30,7 @@ namespace EnhancedFramework.UI {
         #endregion
 
         #region Global Members
-        [Section("Blink Effect")]
+        [Section("Blink [UI Effect]")]
 
         [Tooltip("All graphics affected by this effect")]
         [SerializeField] private Graphic[] graphics = new Graphic[0];
@@ -61,7 +61,6 @@ namespace EnhancedFramework.UI {
 
             // Stop.
             if (!_enabled && sequence.IsActive()) {
-
                 sequence.DoKill();
                 return;
             }
@@ -69,8 +68,11 @@ namespace EnhancedFramework.UI {
             // Blink.
             if (_enabled && !sequence.IsActive()) {
 
-                foreach (Graphic _graphic in graphics) {
-                    sequence.Join(_graphic.DOColor(blink.Color, blink.Duration));
+                ref Graphic[] _span = ref graphics;
+                int _count = _span.Length;
+
+                for (int i = 0; i < _count; i++) {
+                    sequence.Join(_span[i].DOColor(blink.Color, blink.Duration));
                 }
 
                 onKillSequence ??= OnKilled;

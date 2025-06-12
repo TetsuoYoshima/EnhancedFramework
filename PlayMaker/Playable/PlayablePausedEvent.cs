@@ -5,6 +5,7 @@
 // ================================================================================== //
 
 using HutongGames.PlayMaker;
+using System;
 using UnityEngine;
 using UnityEngine.Playables;
 
@@ -31,18 +32,23 @@ namespace EnhancedFramework.PlayMaker {
         #endregion
 
         #region Behaviour
+        private Action<PlayableDirector> onPaused = null;
+
+        // -----------------------
+
         public override void Reset() {
             base.Reset();
 
-            Playable = null;
             PausedEvent = null;
+            Playable    = null;
         }
 
         public override void OnEnter() {
             base.OnEnter();
 
             if (Playable.Value is PlayableDirector _playable) {
-                _playable.paused += OnPaused;
+                onPaused ??= OnPaused;
+                _playable.paused += onPaused;
             }
 
             Finish();
@@ -52,11 +58,13 @@ namespace EnhancedFramework.PlayMaker {
             base.OnExit();
 
             if (Playable.Value is PlayableDirector _playable) {
-                _playable.paused -= OnPaused;
+                _playable.paused -= onPaused;
             }
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void OnPaused(PlayableDirector _playable) {
             Fsm.Event(PausedEvent);

@@ -82,7 +82,7 @@ namespace EnhancedFramework.Inputs {
         /// Editor generator called method.
         /// </summary>
         internal void Initialize(InputAction _input) {
-            input = _input;
+            input    = _input;
             IsPaused = false;
         }
         #endif

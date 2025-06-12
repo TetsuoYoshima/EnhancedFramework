@@ -20,6 +20,8 @@ namespace EnhancedFramework.Inputs {
 
         [SerializeField, Enhanced, ReadOnly] private bool isPaused = false;
 
+        // -----------------------
+
         /// <summary>
         /// If true, indicates if this input isn't related to any input map or database.
         /// </summary>

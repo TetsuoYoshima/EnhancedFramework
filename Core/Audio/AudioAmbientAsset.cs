@@ -16,7 +16,7 @@ namespace EnhancedFramework.Core {
     [CreateAssetMenu(fileName = "AMB_Ambient", menuName = FrameworkUtility.MenuPath + "Audio/Ambient", order = FrameworkUtility.MenuOrder)]
     public sealed class AudioAmbientAsset : EnhancedScriptableObject, IWeightControl {
         #region Global Members
-        [Section("Ambient Asset")]
+        [Section("Audio Ambient Asset")]
 
         [Tooltip("Main audio of this ambient, played in background")]
         [SerializeField, Enhanced, Required] private AudioAsset mainAudio = null;
@@ -26,7 +26,7 @@ namespace EnhancedFramework.Core {
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
-        [Tooltip("Priority of this ambient; Ambients with a lower priority can be overriden by those with a higher priority")]
+        [Tooltip("Priority of this ambient - ambients with a lower priority can be overriden by those with a higher priority")]
         [SerializeField, Enhanced, Range(0f, 99f)] private int priority = 0;
 
         [Space(10f)]

@@ -134,11 +134,11 @@ namespace EnhancedFramework.Core {
 
         internal protected override void Setup() {
 
-            List<SerializedInterface<IResourceBehaviour<T>>> _behavioursSpan = Behaviours;
-            int _count = _behavioursSpan.Count;
+            ref List<SerializedInterface<IResourceBehaviour<T>>> _span = ref Behaviours;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
-                _behavioursSpan[i].Interface.FillResource(this as T);
+                _span[i].Interface.FillResource(this as T);
             }
         }
         #endregion
@@ -173,8 +173,9 @@ namespace EnhancedFramework.Core {
 
         public bool IsProcessing {
             get {
-                for (int i = resources.Count; i-- > 0;) {
-                    if (resources[i].Value.IsProcessing)
+                ref List<RLoader> _span = ref resources;
+                for (int i = _span.Count; i-- > 0;) {
+                    if (_span[i].Value.IsProcessing)
                         return true;
                 }
 
@@ -197,16 +198,15 @@ namespace EnhancedFramework.Core {
             EnhancedSceneManager.OnPreUnloadBundle += OnPreUnloadBundle;
         }
 
-
         protected override void OnInit() {
             base.OnInit();
 
             // Get and load all resources during initialization.
-            List<RLoader> _resourcesSpan = resources;
-            int _count = _resourcesSpan.Count;
+            ref List<RLoader> _span = ref resources;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
-                ResourceLoader _resource = (ResourceLoader)_resourcesSpan[i];
+                ResourceLoader _resource = (ResourceLoader)_span[i];
                 _resource.Setup();
                 _resource.Load();
             }
@@ -225,22 +225,21 @@ namespace EnhancedFramework.Core {
 
         private void OnPreUnloadBundle(SceneBundle _bundle) {
             // When this object scene is about to be unloaded, unload its associated resources.
-            Scene _scene = gameObject.scene;
-            if (!IsSceneLoaded()) {
+            if (!IsSceneLoaded(ref _bundle.Scenes, gameObject.scene)) {
                 return;
             }
 
-            List<RLoader> _resourcesSpan = resources;
-            for (int i = _resourcesSpan.Count; i-- > 0;) {
-                _resourcesSpan[i].Value.Unload();
+            ref List<RLoader> _span = ref resources;
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].Value.Unload();
             }
 
             // ----- Local Method ----- \\
 
-            bool IsSceneLoaded() {
+            static bool IsSceneLoaded(ref SceneAsset[] _scenes, Scene _scene) {
 
-                for (int i = 0; i < _bundle.Scenes.Length; i++) {
-                    if (_bundle.Scenes[i].Scene == _scene)
+                for (int i = _scenes.Length; i-- > 0;) {
+                    if (_scenes[i].Scene == _scene)
                         return true;
                 }
 

@@ -43,9 +43,9 @@ namespace EnhancedFramework.Core {
 
             Vectors.Clear();
             Strings.Clear();
-            Floats.Clear();
-            Bools.Clear();
-            Ints.Clear();
+            Floats .Clear();
+            Bools  .Clear();
+            Ints   .Clear();
 
             if (_object is EnhancedBehaviour _behaviour) {
                 _behaviour.SavePlayModeData(this);
@@ -136,10 +136,10 @@ namespace EnhancedFramework.Core {
             get {
                 return chronos;
             } internal set {
-                bool doPause = (chronos == 0f) != (value == 0f);
+                bool _doPause = (chronos == 0f) != (value == 0f);
                 chronos = value;
 
-                if (doPause) {
+                if (_doPause) {
                     OnPaused(value == 0f);
                 }
             }
@@ -345,6 +345,8 @@ namespace EnhancedFramework.Core {
         internal protected virtual void OnDrawHandles() { }
         #endregion
 
+        // --- Logic --- \\
+
         #region Object ID
         /// <summary>
         /// If true, automatically regenerates this object ID on play if required.
@@ -364,7 +366,7 @@ namespace EnhancedFramework.Core {
             #if UNITY_EDITOR
             if (!Application.isPlaying) {
 
-                // Prefab objects always have a null id.
+                // Prefab objects always have a null scene id.
                 if (!gameObject.scene.IsValid() || (StageUtility.GetCurrentStage() is PrefabStage)) {
 
                     if (objectID.IsValid) {
@@ -436,7 +438,6 @@ namespace EnhancedFramework.Core {
         public void AnimationEvent(ScriptableObject _event) {
 
             if (_event is not IEnhancedAnimationEvent _animationEvent) {
-
                 this.LogWarningMessage($"{_event.name} is not of AnimationEvent type", _event);
                 return;
             }
@@ -460,7 +461,6 @@ namespace EnhancedFramework.Core {
 
             // Security.
             if (this is not ITrigger _trigger) {
-
                 this.LogWarningMessage("Object is no Trigger");
                 return;
             }
@@ -517,13 +517,15 @@ namespace EnhancedFramework.Core {
         }
         #endregion
 
+        // --- Miscs --- \\
+
         #region Utility
         /// <summary>
         /// Compare two <see cref="EnhancedBehaviour"/> instances.
         /// </summary>
         /// <returns>True if they are the same, false otherwise.</returns>
         public bool Equals(EnhancedBehaviour _other) {
-            return _other.IsValid() && (ID == _other.ID);
+            return _other.IsValid() && (ID.Equals(_other.ID));
         }
 
         // -------------------------------------------
@@ -574,6 +576,7 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Logger
+        /// <inheritdoc/>
         public virtual string GetLogMessageFormat(LogType _type) {
             return EnhancedLogger.GetMessageFormat(GetType(), GetLogMessageColor(_type));
         }

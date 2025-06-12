@@ -13,10 +13,10 @@ namespace EnhancedFramework.UI {
     /// Plays an <see cref="AudioAsset"/>.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Audio UI Effect")]
+    [AddComponentMenu(MenuPath + "Audio [UI Effect]")]
     public sealed class AudioUIEffect : EnhancedSelectableEffect {
         #region Global Members
-        [Section("Audio Effect")]
+        [Section("Audio [UI Effect]")]
 
         [Tooltip("If true, don't play any sound when this button is the first selected")]
         [SerializeField] private bool ignoreFirstSelection = true;

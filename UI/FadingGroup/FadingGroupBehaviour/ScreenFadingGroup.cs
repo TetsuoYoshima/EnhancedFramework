@@ -23,6 +23,8 @@ namespace EnhancedFramework.UI {
         #endregion
     }
 
+    // ===== Component ===== \\
+
     /// <summary>
     /// <see cref="EnhancedBehaviour"/> UI class used to make a screen fade. 
     /// </summary>

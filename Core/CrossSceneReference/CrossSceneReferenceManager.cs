@@ -37,7 +37,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_object">The object reference to unregister.</param>
         internal void Unregister(CrossSceneObject _object) {
-            references.Remove(_object);
+            references.RemoveSwap(_object);
         }
         #endregion
 
@@ -50,13 +50,12 @@ namespace EnhancedFramework.Core {
         /// <returns>True if the associated <see cref="CrossSceneObject"/> could be found, false otherwise.</returns>
         public bool GetReference(EnhancedObjectID _id, out CrossSceneObject _reference) {
 
-            List<CrossSceneObject> _referencesSpan = references;
-            int _count = _referencesSpan.Count;
+            ref List<CrossSceneObject> _span = ref references;
 
-            for (int i = 0; i < _count; i++) {
+            for (int i = _span.Count; i-- > 0;) {
 
-                _reference = _referencesSpan[i];
-                if (_reference.ID == _id) {
+                _reference = _span[i];
+                if (_reference.ID.Equals(_id)) {
                     return true;
                 }
             }

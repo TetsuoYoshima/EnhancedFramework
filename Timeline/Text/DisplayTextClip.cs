@@ -20,7 +20,7 @@ namespace EnhancedFramework.Timeline {
     /// <summary>
     /// Displays a given <see cref="TextMeshProUGUI"/> content for the duration of the clip.
     /// </summary>
-    [DisplayName("Text/Display Text")]
+    [DisplayName(NamePrefix + "Display Text")]
     public sealed class DisplayTextClip : TextMeshProPlayableAsset<DisplayTextBehaviour> {
         #region Global Members
         #if UNITY_EDITOR
@@ -78,7 +78,8 @@ namespace EnhancedFramework.Timeline {
         public override void ProcessFrame(Playable _playable, FrameData _info, object _playerData) {
             base.ProcessFrame(_playable, _info, _playerData);
 
-            if (bindingObject.IsNull()) {
+            TextMeshProUGUI _text = bindingObject;
+            if (_text.IsNull()) {
                 return;
             }
 
@@ -86,7 +87,7 @@ namespace EnhancedFramework.Timeline {
             // Get best per character duration using clip duration.
             if (!Application.isPlaying) {
 
-                int _characterCount = bindingObject.textInfo.characterCount;
+                int _characterCount = _text.textInfo.characterCount;
                 source.perfectCharacterDuration = (_characterCount != 0)
                                                 ? ((float)_playable.GetDuration() / _characterCount)
                                                 : 0f;
@@ -99,23 +100,24 @@ namespace EnhancedFramework.Timeline {
             if (UseCharacterDuration) {
                 _characterDuration = CharacterDuration;
             } else {
-                int _characterCount = bindingObject.textInfo.characterCount;
+                int _characterCount = _text.textInfo.characterCount;
                 _characterDuration = (float)_playable.GetDuration() / _characterCount;
             }
 
             int _count = (int)(_playable.GetTime() / _characterDuration);
-            bindingObject.maxVisibleCharacters = _count;
+            _text.maxVisibleCharacters = _count;
         }
 
         protected override void OnStop(Playable _playable, FrameData _info, bool _completed) {
             base.OnStop(_playable, _info, _completed);
 
-            if (bindingObject.IsNull()) {
+            TextMeshProUGUI _text = bindingObject;
+            if (_text.IsNull()) {
                 return;
             }
 
             // Set visible.
-            bindingObject.maxVisibleCharacters = int.MaxValue;
+            _text.maxVisibleCharacters = int.MaxValue;
         }
         #endregion
     }

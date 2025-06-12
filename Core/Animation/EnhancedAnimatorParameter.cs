@@ -10,11 +10,11 @@
 
 using EnhancedEditor;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 #if DOTWEEN
 using DG.Tweening;
-using System.Collections.Generic;
 #endif
 
 #if UNITY_EDITOR
@@ -37,14 +37,13 @@ namespace EnhancedFramework.Core {
         public sealed class AnimatorWrapper {
             private const float DelayValue = .001f;
 
-            /// <summary>
-            /// Animator wrapped in this object.
-            /// </summary>
+            public readonly EnhancedAnimatorParameter Parameter = null;
             public readonly Animator Animator = null;
 
             private DelayHandler delay = default;
             private TweenHandler tween = default;
 
+            private Action<float> tweenSetter = null;
             private float tweenTarget = 0f;
 
             /// <summary>
@@ -58,8 +57,9 @@ namespace EnhancedFramework.Core {
             // Constructor(s)
             // -------------------------------------------
 
-            public AnimatorWrapper(Animator _animator) {
-                Animator = _animator;
+            public AnimatorWrapper(Animator _animator, EnhancedAnimatorParameter _parameter) {
+                Parameter = _parameter;
+                Animator  = _animator;
             }
 
             // -------------------------------------------
@@ -75,7 +75,7 @@ namespace EnhancedFramework.Core {
 
             #if DOTWEEN
             /// <inheritdoc cref="Tweener.Tween(float, float, Action{float}, float, Ease, bool, Action{bool})"/>
-            public void Tween(float _from, float _to, Action<float> _setter, float _duration, Ease _ease) {
+            public void Tween(float _from, float _to, Action<Animator, float> _setter, float _duration, Ease _ease) {
 
                 if (tween.IsValid && (tweenTarget == _to)) {
                     return;
@@ -83,13 +83,15 @@ namespace EnhancedFramework.Core {
 
                 tween.Stop();
 
+                tweenSetter ??= OnTweenSet;
                 tweenTarget = _to;
-                tween = Tweener.Tween(_from, _to, _setter, _duration, _ease, RealTime, null);
+
+                tween = Tweener.Tween(_from, _to, tweenSetter, _duration, _ease, RealTime, null);
             }
             #endif
 
             /// <inheritdoc cref="Tweener.Tween(float, float, Action{float}, float, AnimationCurve, bool, Action{bool})"/>
-            public void Tween(float _from, float _to, Action<float> _setter, float _duration, AnimationCurve _curve) {
+            public void Tween(float _from, float _to, Action<Animator, float> _setter, float _duration, AnimationCurve _curve) {
 
                 if (tween.IsValid && (tweenTarget == _to)) {
                     return;
@@ -97,17 +99,25 @@ namespace EnhancedFramework.Core {
 
                 tween.Stop();
 
+                tweenSetter ??= OnTweenSet;
                 tweenTarget = _to;
-                tween = Tweener.Tween(_from, _to, _setter, _duration, _curve, RealTime, null);
+
+                tween = Tweener.Tween(_from, _to, tweenSetter, _duration, _curve, RealTime, null);
             }
 
             /// <summary>
             /// Clears this wrapper content and stops its operations.
             /// </summary>
             public void Clear() {
-
                 delay.Cancel();
                 tween.Stop();
+            }
+
+            /// <summary>
+            /// Called when setting this parameter value from a tween.
+            /// </summary>
+            private void OnTweenSet(float _value) {
+                Parameter.OnSetCompelexValue(Animator, _value);
             }
         }
         #endregion
@@ -154,13 +164,14 @@ namespace EnhancedFramework.Core {
 
         [NonSerialized] protected int hash = 0;
 
+        // -----------------------
+
         /// <summary>
         /// Name hash of this parameter.
         /// </summary>
         public int Hash {
             get {
                 if (hash == 0) {
-
                     hash = Animator.StringToHash(parameterName);
                     this.LogErrorMessage("Parameter hash value was not correctly configured");
                 }
@@ -226,7 +237,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_animator"><see cref="Animator"/> to register.</param>
         public void Register(Animator _animator) {
-            animators.Add(new AnimatorWrapper(_animator));
+            animators.Add(new AnimatorWrapper(_animator, this));
         }
 
         /// <summary>
@@ -235,209 +246,257 @@ namespace EnhancedFramework.Core {
         /// <param name="_animator"><see cref="Animator"/> to unregister.</param>
         public void Unregister(Animator _animator) {
 
-            List<AnimatorWrapper> _animatorsSpan = animators.collection;
-            int _count = _animatorsSpan.Count;
+            ref List<AnimatorWrapper> _span = ref animators.collection;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
-                
-                if (_animatorsSpan[i].Animator == _animator) {
+                if (_span[i].Animator == _animator) {
 
-                    _animatorsSpan.RemoveAt(i);
+                    _span.RemoveAt(i);
                     return;
                 }
             }
         }
         #endregion
 
-        #region Parameter
+        // --- Update --- \\
+
+        #region Simple
+        private readonly List<Pair<Animator, bool>> simpleUpdateBuffer = new List<Pair<Animator, bool>>();
+        private Action simpleUpdateCallback = null;
+
         // -------------------------------------------
-        // Bool
+        // Set
         // -------------------------------------------
 
         /// <inheritdoc cref="EnhancedAnimatorController.SetBool(Animator, int, bool)"/>
         public void SetBool(Animator _animator, bool _value) {
 
             if (!IsBool) {
-
                 this.LogErrorMessage($"Parameter is not of type {typeof(bool).Name.Bold()}   ({type})");
                 return;
             }
 
-            UpdateValue(_animator, Update);
-
-            // ----- Local Method ----- \\
-
-            void Update() {
-                _animator.SetBool(Hash, _value);
-            }
+            UpdateValue(_animator, _value);
         }
-
-        // -------------------------------------------
-        // Int
-        // -------------------------------------------
-
-        /// <inheritdoc cref="EnhancedAnimatorController.SetInt(Animator, int, int)"/>
-        public void SetInt(Animator _animator, int _value) {
-
-            if (!IsInt) {
-
-                this.LogErrorMessage($"Parameter is not of type {typeof(int).Name.Bold()}   ({type})");
-                return;
-            }
-
-            float _from = _animator.GetInteger(Hash);
-            TweenValue(_animator, _from, _value, SetValue);
-
-            // ----- Local Method ----- \\
-
-            void SetValue(float _value) {
-                _animator.SetInteger(Hash, Mathf.RoundToInt(_value));
-            }
-        }
-
-        // -------------------------------------------
-        // Float
-        // -------------------------------------------
-
-        /// <inheritdoc cref="EnhancedAnimatorController.SetFloat(Animator, int, float)"/>
-        public void SetFloat(Animator _animator, float _value) {
-
-            if (!IsFloat) {
-
-                this.LogErrorMessage($"Parameter is not of type {typeof(float).Name.Bold()}   ({type})");
-                return;
-            }
-
-            float _from = _animator.GetFloat(Hash);
-            TweenValue(_animator, _from, _value, SetValue);
-
-            // ----- Local Method ----- \\
-
-            void SetValue(float _value) {
-                _animator.SetFloat(Hash, _value);
-            }
-        }
-
-        // -------------------------------------------
-        // Trigger
-        // -------------------------------------------
 
         /// <inheritdoc cref="EnhancedAnimatorController.SetTrigger(Animator, int)"/>
         public void SetTrigger(Animator _animator) {
 
             if (!IsTrigger) {
-
                 this.LogErrorMessage($"Parameter is not of type Trigger   ({type})");
                 return;
             }
 
-            UpdateValue(_animator, Update);
-
-            // ----- Local Method ----- \\
-
-            void Update() {
-                _animator.SetTrigger(Hash);
-            }
+            UpdateValue(_animator, true);
         }
 
         /// <inheritdoc cref="EnhancedAnimatorController.ResetTrigger(Animator, int)"/>
         public void ResetTrigger(Animator _animator) {
 
             if (!IsTrigger) {
-
                 this.LogErrorMessage($"Parameter is not of type Trigger   ({type})");
                 return;
             }
 
-            UpdateValue(_animator, Update);
+            UpdateValue(_animator, false);
+        }
 
-            // ----- Local Method ----- \\
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
 
-            void Update() {
-                _animator.ResetTrigger(Hash);
+        /// <summary>
+        /// Manages a specific update call.
+        /// </summary>
+        /// <param name="_animator"><see cref="Animator"/> associated with this call.</param>
+        private void UpdateValue(Animator _animator, bool _value) {
+
+            if (delayUpdate && GetWrapperIndex(_animator, out AnimatorWrapper _wrapper)) {
+
+                simpleUpdateCallback ??= OnUpdateSimpleValue;
+                simpleUpdateBuffer.Add(new Pair<Animator, bool>(_animator, _value));
+
+                _wrapper.Delay(simpleUpdateCallback);
+                return;
+            }
+
+            UpdateSimpleValue(_animator, _value);
+        }
+
+        // -------------------------------------------
+        // Callback(s)
+        // -------------------------------------------
+
+        private void OnUpdateSimpleValue() {
+
+            // Invalid.
+            if (!simpleUpdateBuffer.SafeFirst(out Pair<Animator, bool> _value)) {
+                return;
+            }
+
+            simpleUpdateBuffer.RemoveAt(0);
+            UpdateSimpleValue(_value.First, _value.Second);
+        }
+
+        private void UpdateSimpleValue(Animator _animator, bool _value) {
+
+            switch (type) {
+
+                case AnimatorControllerParameterType.Bool:
+                    _animator.SetBool(Hash, _value);
+                    break;
+
+                case AnimatorControllerParameterType.Trigger:
+                    if (_value) {
+                        _animator.SetTrigger(Hash);
+                    } else {
+                        _animator.ResetTrigger(Hash);
+                    }
+                    break;
+
+                case AnimatorControllerParameterType.Float:
+                case AnimatorControllerParameterType.Int:
+                default:
+                    break;
             }
         }
         #endregion
 
-        #region Utility
-        /// <summary>
-        /// Manages a specific update call.
-        /// </summary>
-        /// <param name="_animator"><see cref="Animator"/> associated with this call.</param>
-        /// <param name="_callback">Update callback.</param>
-        private void UpdateValue(Animator _animator, Action _callback) {
+        #region Complex
+        private readonly List<Pair<Animator, Pair<float, float>>> complexUpdateBuffer = new List<Pair<Animator, Pair<float, float>>>();
+        private Action<Animator, float> complexUpdateSetter = null;
+        private Action complexUpdateCallback      = null;
 
-            if (delayUpdate && GetWrapperIndex(_animator, out int _index)) {
+        // -------------------------------------------
+        // Set
+        // -------------------------------------------
 
-                animators[_index].Delay(_callback);
+        /// <inheritdoc cref="EnhancedAnimatorController.SetInt(Animator, int, int)"/>
+        public void SetInt(Animator _animator, int _value) {
+
+            if (!IsInt) {
+                this.LogErrorMessage($"Parameter is not of type {typeof(int).Name.Bold()}   ({type})");
                 return;
             }
 
-            _callback?.Invoke();
+            float _from = _animator.GetInteger(Hash);
+            TweenValue(_animator, _from, _value);
         }
 
+        /// <inheritdoc cref="EnhancedAnimatorController.SetFloat(Animator, int, float)"/>
+        public void SetFloat(Animator _animator, float _value) {
+
+            if (!IsFloat) {
+                this.LogErrorMessage($"Parameter is not of type {typeof(float).Name.Bold()}   ({type})");
+                return;
+            }
+
+            float _from = _animator.GetFloat(Hash);
+            TweenValue(_animator, _from, _value);
+        }
+
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
+
         /// <summary>
         /// Manages a specific update call.
         /// </summary>
         /// <param name="_animator"><see cref="Animator"/> associated with this call.</param>
-        /// <param name="_callback">Update callback.</param>
-        private void TweenValue(Animator _animator, float _from, float _to, Action<float> _setter) {
+        private void TweenValue(Animator _animator, float _from, float _to) {
 
-            // Instant.
-            if (!GetWrapperIndex(_animator, out int _index)) {
+            if (delayUpdate && GetWrapperIndex(_animator, out AnimatorWrapper _wrapper)) {
 
-                _setter?.Invoke(_to);
+                complexUpdateCallback ??= OnUpdateComplexValue;
+                complexUpdateBuffer.Add(new Pair<Animator, Pair<float, float>>(_animator, new Pair<float, float>(_from, _to)));
+
+                _wrapper.Delay(complexUpdateCallback);
                 return;
             }
 
-            if (delayUpdate) {
+            UpdateComplexValue(_animator, _from, _to);
+        }
 
-                animators[_index].Delay(OnUpdate);
+        // -------------------------------------------
+        // Callbacks
+        // -------------------------------------------
+
+        private void OnUpdateComplexValue() {
+
+            // Invalid.
+            if (!complexUpdateBuffer.SafeFirst(out Pair<Animator, Pair<float, float>> _value)) {
                 return;
             }
 
-            OnUpdate();
+            complexUpdateBuffer.RemoveAt(0);
 
-            // ----- Local Method ----- \\
+            Pair<float, float> _range = _value.Second;
+            UpdateComplexValue(_value.First, _range.First, _range.Second);
+        }
 
-            void OnUpdate() {
+        private void UpdateComplexValue(Animator _animator, float _from, float _to) {
 
-                // Instant.
-                if (updateValueDuration == 0f) {
+            // Tween.
+            if ((updateValueDuration > 0f) && GetWrapperIndex(_animator, out AnimatorWrapper _wrapper)) {
 
-                    _setter?.Invoke(_to);
-                    return;
-                }
-                
+                complexUpdateSetter ??= OnSetCompelexValue;
+
                 #if DOTWEEN
-                animators[_index].Tween(_from, _to, _setter, updateValueDuration, updateEase);
+                _wrapper.Tween(_from, _to, complexUpdateSetter, updateValueDuration, updateEase);
                 #else
-                animators[_index].Tween(_from, _to, _setter, updateValueDuration, updateCurve);
+                _wrapper.Tween(_from, _to, complexUpdateSetter, updateValueDuration, updateCurve);
                 #endif
+
+            } else {
+                // Instant.
+                OnSetCompelexValue(_animator, _to);
             }
         }
 
+        private void OnSetCompelexValue(Animator _animator, float _value) {
+
+            switch (type) {
+
+                case AnimatorControllerParameterType.Float:
+                    _animator.SetFloat(Hash, _value);
+                    break;
+
+                case AnimatorControllerParameterType.Int:
+                    _animator.SetInteger(Hash, Mathf.RoundToInt(_value));
+                    break;
+
+                case AnimatorControllerParameterType.Trigger:
+                case AnimatorControllerParameterType.Bool:
+                default:
+                    break;
+            }
+        }
+        #endregion
+
+        // --- Utility --- \\
+
+        #region Utility
         /// <summary>
         /// Get the index of the wrapper associated with a specific <see cref="Animator"/>.
         /// </summary>
         /// <param name="_animator"><see cref="Animator"/> to get the associated wrapper index.</param>
         /// <param name="_index">Index of this animator wrapper.</param>
         /// <returns>True if an associated wrapper could be found for this animator, false otherwise.</returns>
-        private bool GetWrapperIndex(Animator _animator, out int _index) {
+        private bool GetWrapperIndex(Animator _animator, out AnimatorWrapper _wrapper) {
 
-            List<AnimatorWrapper> _animatorsSpan = animators.collection;
-            int _count = _animatorsSpan.Count;
+            ref List<AnimatorWrapper> _span = ref animators.collection;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
+                _wrapper = _span[i];
 
-                if (_animatorsSpan[i].Animator == _animator) {
-
-                    _index = i;
+                if (_wrapper.Animator == _animator) {
                     return true;
                 }
             }
 
-            _index = -1;
+            _wrapper = null;
             return false;
         }
 
@@ -467,25 +526,26 @@ namespace EnhancedFramework.Core {
             // Setup.
             _parameter.type = type;
 
-            _parameter.defaultBool  = defaultBool;
             _parameter.defaultFloat = defaultFloat;
+            _parameter.defaultBool  = defaultBool;
             _parameter.defaultInt   = defaultInt;
-        }
 
-        // -----------------------
+            // ----- Local Method ----- \\
 
-        private bool FindParameterByName(AnimatorControllerParameter[] _parameters, string _name, out AnimatorControllerParameter _parameter) {
+            static bool FindParameterByName(AnimatorControllerParameter[] _parameters, string _name, out AnimatorControllerParameter _parameter) {
 
-            for (int i = 0; i < _parameters.Length; i++) {
+                int _count = _parameters.Length;
+                for (int i = 0; i < _count; i++) {
 
-                _parameter = _parameters[i];
-                if (_parameter.name.Equals(_name, System.StringComparison.Ordinal)) {
-                    return true;
+                    _parameter = _parameters[i];
+                    if (_parameter.name.Equals(_name, System.StringComparison.Ordinal)) {
+                        return true;
+                    }
                 }
-            }
 
-            _parameter = null;
-            return false;
+                _parameter = null;
+                return false;
+            }
         }
         #endif
         #endregion

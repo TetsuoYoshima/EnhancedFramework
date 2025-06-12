@@ -43,10 +43,10 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            Trigger      = null;
             OnEnterEvent = null;
             OnExitEvent  = null;
             StoreObject  = null;
+            Trigger      = null;
         }
 
         public override void OnEnter() {

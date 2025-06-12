@@ -20,6 +20,7 @@ namespace EnhancedFramework.Core {
     /// </summary>
     public enum LoadingState {
         Inactive                = 0,
+
         Request                 = 1,
         Prepare                 = 2,
         Start                   = 3,
@@ -39,6 +40,7 @@ namespace EnhancedFramework.Core {
     /// </summary>
     public enum UnloadingState {
         Inactive                = 0,
+
         Request                 = 1,
         Prepare                 = 2,
         Start                   = 3,
@@ -109,6 +111,8 @@ namespace EnhancedFramework.Core {
         }
         #endregion
     }
+
+    // ===== Manager ===== \\
 
     /// <summary>
     /// Singleton instance managing the loading and unloading of scenes in the game.
@@ -260,6 +264,15 @@ namespace EnhancedFramework.Core {
         protected override void OnInit() {
             base.OnInit();
 
+            // Get all loaded bundles.
+            for (int i = SceneManager.sceneCount; i-- > 0;) {
+
+                Scene _scene = SceneManager.GetSceneAt(i);
+                if (!_scene.IsCoreScene() && SceneBundle.GetSceneBundle(_scene, out SceneBundle _bundle)) {
+                    loadedBundles.Add(_bundle);
+                }
+            }
+
             #if UNITY_EDITOR
             if (SceneManager.sceneCount == 1) {
                 // Load the first scene if only core is loaded.
@@ -279,17 +292,20 @@ namespace EnhancedFramework.Core {
                     }
                 }
 
-                // Avoid any Play callback before loading end by suspending the UpdateManager.
+                // Avoid any Play callback before end of loading by suspending the UpdateManager.
                 UpdateManager.Instance.IsSuspended = true;
 
                 // Default loading.
-                if (loadingBundles.Count == 0) {
+                var _loadingBundles = loadingBundles;
+                int _count = _loadingBundles.Count;
+
+                if (_count == 0) {
                     DoPerformLoading();
                 }
 
                 // Simulate game loading if another scene than core or than the first game scene is loaded.
-                if ((loadingBundles.Count != 2) || !IsFirstSceneLoaded()) {
-                    Behaviour.OnEnterPlayModeEditor(loadingBundles, LoadingSettings);
+                if ((_count != 2) || !IsFirstSceneLoaded(ref _loadingBundles.collection, firstScene)) {
+                    Behaviour.OnEnterPlayModeEditor(_loadingBundles, LoadingSettings);
                 }
             }
             #else
@@ -298,12 +314,10 @@ namespace EnhancedFramework.Core {
 
             // ----- Local Methods ----- \\
 
-            bool IsFirstSceneLoaded() {
+            static bool IsFirstSceneLoaded(ref List<Pair<SceneBundle, LoadSceneMode>> _loadingBundles, SceneBundle _firstScene) {
 
-                List<Pair<SceneBundle, LoadSceneMode>> _loadingBundles = loadingBundles.collection;
                 for (int i = _loadingBundles.Count; i-- > 0;) {
-
-                    if (_loadingBundles[i].First == firstScene)
+                    if (_loadingBundles[i].First == _firstScene)
                         return true;
                 }
 
@@ -311,11 +325,6 @@ namespace EnhancedFramework.Core {
             }
 
             void LoadFirstScene() {
-                // Get this object scene bundle.
-                if (SceneBundle.GetSceneBundle(gameObject.scene, out SceneBundle _bundle)) {
-                    loadedBundles.Add(_bundle);
-                }
-
                 if (firstScene.IsValid()) {
                     Instance.LoadSceneBundle(firstScene, LoadSceneMode.Additive);
                 }
@@ -324,7 +333,7 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Registration
-        private readonly EnhancedCollection<ILoadingProcessor> processors = new EnhancedCollection<ILoadingProcessor>();
+        private List<ILoadingProcessor> processors = new List<ILoadingProcessor>();
 
         // -----------------------
         
@@ -345,7 +354,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_processor">The <see cref="ILoadingProcessor"/> to unregister.</param>
         public void UnregisterProcessor(ILoadingProcessor _processor) {
-            processors.Remove(_processor);
+            processors.RemoveSwap(_processor);
         }
         #endregion
 
@@ -495,17 +504,19 @@ namespace EnhancedFramework.Core {
         private IEnumerator PerformLoading() {
             yield return null;
 
+            SceneManagerBehaviour _behaviour = Behaviour;
+
             // Preparation.
-            Behaviour.PrepareLoading(loadingBundles, LoadingSettings);
+            _behaviour.PrepareLoading(loadingBundles, LoadingSettings);
             SetLoadingState(LoadingState.Prepare);
             
             // Wait for all pending operations to be compelete.
-            while ((unloadingState != UnloadingState.Inactive) || !Behaviour.StartLoading) {
+            while ((unloadingState != UnloadingState.Inactive) || !_behaviour.StartLoading) {
                 yield return null;
             }
 
             // Initialization.
-            Behaviour.OnStartLoading();
+            _behaviour.OnStartLoading();
             OnStartLoading?.Invoke();
 
             SetLoadingState(LoadingState.Start);
@@ -522,14 +533,15 @@ namespace EnhancedFramework.Core {
 
             // Cache the yield instruction to avoid garbage.
             var _interval = new WaitForSecondsRealtime(LoadBundleInterval);
-            int _loadingBundleCount = loadingBundles.Count;
+            var _loadingBundles = loadingBundles;
 
-            for (int i = 0; i < _loadingBundleCount; i++) {
-                var _pair = loadingBundles[i];
+            for (int i = 0; i < _loadingBundles.Count; i++) {
+
+                var _pair = _loadingBundles[i];
                 SceneBundle _toLoad = _pair.First;
                 LoadSceneMode _mode = _pair.Second;
 
-                Behaviour.OnPreLoadBundle(_toLoad, _mode);
+                _behaviour.OnPreLoadBundle(_toLoad, _mode);
                 OnPreLoadBundle?.Invoke(_toLoad);
 
                 // When wanting to load a bundle all alone,
@@ -537,7 +549,7 @@ namespace EnhancedFramework.Core {
                 if (_mode == LoadSceneMode.Single) {
                     SetLoadingState(LoadingState.Unloading);
 
-                    for (int j = 0; j < loadedBundles.Count; j++) {
+                    for (int j = loadedBundles.Count; j-- > 0;) {
 
                         SceneBundle _toUnload = loadedBundles[j];
                         if (!_toUnload.IsCoreBundle()) {
@@ -554,19 +566,27 @@ namespace EnhancedFramework.Core {
                 }
 
                 // Loading operation.
-                var _operation = _toLoad.LoadAsync(LoadSceneMode.Additive);
-                Behaviour.OnLoadBundle(_operation, i, _loadingBundleCount);
+                if (!_toLoad.IsLoaded) {
+                    // Loading operation.
+                    var _operation = _toLoad.LoadAsync(LoadSceneMode.Additive);
+                    _behaviour.OnLoadBundle(_operation, i, _loadingBundles.Count);
 
-                yield return _operation;
-                yield return _interval;
+                    yield return _operation;
 
-                loadedBundles.Add(_toLoad);
+                    if (i < (_loadingBundles.Count - 1)) {
+                        yield return _interval;
+                    }
 
-                Behaviour.OnPostLoadBundle(_toLoad, _mode);
+                    if (!_toLoad.IsCoreBundle()) {
+                        loadedBundles.Add(_toLoad);
+                    }
+                }
+
+                _behaviour.OnPostLoadBundle(_toLoad, _mode);
                 OnPostLoadBundle?.Invoke(_toLoad);
             }
 
-            loadingBundles.Clear();
+            _loadingBundles.Clear();
 
             // Free memory.
             if (FreeMemory(out AsyncOperation _freeMemory)) {
@@ -589,15 +609,15 @@ namespace EnhancedFramework.Core {
             SetLoadingState(LoadingState.MinimumDuration);
 
             // Minimum duration.
-            while ((Time.realtimeSinceStartup - _startTime) < Behaviour.LoadingMinimumDuration) {
+            while ((Time.realtimeSinceStartup - _startTime) < _behaviour.LoadingMinimumDuration) {
                 yield return null;
             }
 
             SetLoadingState(LoadingState.Ready);
-            Behaviour.OnLoadingReady();
+            _behaviour.OnLoadingReady();
 
             // Before completion, let the behaviour complete its requested operations (like a press for any key).
-            while (!Behaviour.CompleteLoading) {
+            while (!_behaviour.CompleteLoading) {
                 yield return null;
             }
 
@@ -728,17 +748,19 @@ namespace EnhancedFramework.Core {
         private IEnumerator PerformUnloading() {
             yield return null;
 
+            SceneManagerBehaviour _behaviour = Behaviour;
+
             // Preparation.
-            Behaviour.PrepareUnloading(unloadingBundles, UnloadingSettings);
+            _behaviour.PrepareUnloading(unloadingBundles, UnloadingSettings);
             SetUnloadingState(UnloadingState.Prepare);
 
             // Wait while a loading operation is in process.
-            while ((loadingState == LoadingState.Loading) || !Behaviour.StartUnloading) {
+            while ((loadingState == LoadingState.Loading) || !_behaviour.StartUnloading) {
                 yield return null;
             }
 
             // Initialization.
-            Behaviour.OnStartUnloading();
+            _behaviour.OnStartUnloading();
             OnStartUnloading?.Invoke();
 
             SetUnloadingState(UnloadingState.Start);
@@ -748,18 +770,19 @@ namespace EnhancedFramework.Core {
 
             // Cache the yield instruction to avoid garbage.
             var _interval = new WaitForSecondsRealtime(UnloadBundleInterval);
-            int _unloadingBundleCount = unloadingBundles.Count;
+            var _unloadingBundles = unloadingBundles;
 
             // Unload bundles.
-            for (int i = 0; i < _unloadingBundleCount; i++) {
-                var _pair = unloadingBundles[i];
+            for (int i = 0; i < _unloadingBundles.Count; i++) {
+
+                var _pair = _unloadingBundles[i];
                 SceneBundle _bundle = _pair.First;
                 UnloadSceneOptions _options = _pair.Second;
 
                 // Before unloading the bundle, call the associated event
                 // and wait for all processors to be ready.
                 // This can be used to perform additional operations before destroying an object.
-                Behaviour.OnPreUnloadBundle(_bundle, _options);
+                _behaviour.OnPreUnloadBundle(_bundle, _options);
                 OnPreUnloadBundle?.Invoke(_bundle);
 
                 while (IsAnyProcessorActive()) {
@@ -767,19 +790,24 @@ namespace EnhancedFramework.Core {
                 }
 
                 // Unloading operation.
-                var _operation = _bundle.UnloadAsync(_options);
-                Behaviour.OnUnloadBundle(_operation, i, loadingBundles.Count);
+                if (_bundle.IsLoaded) {
+                    var _operation = _bundle.UnloadAsync(_options);
+                    _behaviour.OnUnloadBundle(_operation, i, _unloadingBundles.Count);
 
-                yield return _operation;
-                yield return _interval;
+                    yield return _operation;
 
-                loadedBundles.Remove(_bundle);
+                    if (i < (_unloadingBundles.Count - 1)) {
+                        yield return _interval;
+                    }
 
-                Behaviour.OnPostUnloadBundle(_bundle, _options);
+                    loadedBundles.Remove(_bundle);
+                }
+
+                _behaviour.OnPostUnloadBundle(_bundle, _options);
                 OnPostUnloadBundle?.Invoke(_bundle);
             }
 
-            unloadingBundles.Clear();
+            _unloadingBundles.Clear();
 
             // Free memory.
             if (FreeMemory(out AsyncOperation _freeMemory)) {
@@ -791,10 +819,10 @@ namespace EnhancedFramework.Core {
             yield return new WaitForSecondsRealtime(UnloadCompletionDelay);
 
             SetUnloadingState(UnloadingState.Ready);
-            Behaviour.OnUnloadingReady();
+            _behaviour.OnUnloadingReady();
 
             // Wait for the behaviour to complete its associated operations.
-            while (!Behaviour.CompleteUnloading) {
+            while (!_behaviour.CompleteUnloading) {
                 yield return null;
             }
 
@@ -862,10 +890,10 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public bool IsAnyProcessorActive() {
 
-            List<ILoadingProcessor> _processorsSpan = processors.collection;
-            for (int i = _processorsSpan.Count; i-- > 0;) {
+            ref List<ILoadingProcessor> _span = ref processors;
+            for (int i = _span.Count; i-- > 0;) {
 
-                if (_processorsSpan[i].IsProcessing) {
+                if (_span[i].IsProcessing) {
                     //this.Log("Waiting for " + processors[_index].LogObject.name);
                     return true;
                 }
@@ -879,9 +907,10 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_gameObject">The <see cref="GameObject"/> to move.</param>
         public void MoveGameObjectToCoreScene(GameObject _gameObject) {
-            // Security.
-            gameObject.transform.SetParent(null);
-            SceneManager.MoveGameObjectToScene(_gameObject, gameObject.scene);
+            GameObject _thisGameObject = gameObject;
+
+            _thisGameObject.transform.SetParent(null); // Security.
+            SceneManager.MoveGameObjectToScene(_gameObject, _thisGameObject.scene);
         }
 
         /// <summary>
@@ -891,7 +920,6 @@ namespace EnhancedFramework.Core {
         private bool FreeMemory(out AsyncOperation _operation) {
 
             if (!unloadResources) {
-
                 _operation = null;
                 return false;
             }

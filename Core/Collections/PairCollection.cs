@@ -60,7 +60,6 @@ namespace EnhancedFramework.Core {
         /// <br/> This method is faster but will add a duplicate if the key is already in the collection.
         /// </summary>
         /// <inheritdoc cref="Set(T, U)"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int AddUnsafe(T _key, U _value) {
             collection.Add(new Pair<T, U>(_key, _value));
             return Count - 1;
@@ -71,6 +70,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_key">The key to remove.</param>
         /// <returns>True if an entry with this key could be found and removed, false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(T _key) {
             if (ContainsKey(_key, out int _index)) {
                 RemoveAt(_index);
@@ -100,10 +100,11 @@ namespace EnhancedFramework.Core {
         /// <param name="_key">The key to get the associated index.</param>
         /// <returns>-1 if the key could not be found in this collection, or its index otheriwse.</returns>
         public int IndexOfKey(T _key) {
+            ref List<Pair<T, U>> _span = ref collection;
+            int _count = _span.Count;
 
-            int _count = Count;
             for (int i = 0; i < _count; i++) {
-                if (EqualityUtility.Equals(collection[i].First, _key)) {
+                if (EqualityUtility.Equals(_span[i].First, _key)) {
                     return i;
                 }
             }
@@ -117,10 +118,11 @@ namespace EnhancedFramework.Core {
         /// <param name="_key">The value to get the associated index.</param>
         /// <returns>-1 if the value could not be found in this collection, or its index otheriwse.</returns>
         public int IndexOfValue(U _value) {
+            ref List<Pair<T, U>> _span = ref collection;
+            int _count = _span.Count;
 
-            int _count = Count;
             for (int i = 0; i < _count; i++) {
-                if (EqualityUtility.Equals(collection[i].Second, _value)) {
+                if (EqualityUtility.Equals(_span[i].Second, _value)) {
                     return i;
                 }
             }
@@ -140,6 +142,7 @@ namespace EnhancedFramework.Core {
         /// <param name="_key">The key to check.</param>
         /// <param name="_index">The index of the key in this collection (-1 if not found).</param>
         /// <returns>True if the key is contained in this collection, false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(T _key, out int _index) {
             _index = IndexOfKey(_key);
             return _index != -1;
@@ -157,6 +160,7 @@ namespace EnhancedFramework.Core {
         /// <param name="_value">The value to check.</param>
         /// <param name="_index">The index of the value in this collection (-1 if not found).</param>
         /// <returns>True if the value is contained in this collection, false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsValue(U _value, out int _index) {
             _index = IndexOfValue(_value);
             return _index != -1;
@@ -183,7 +187,6 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_index">Index to get the element at.</param>
         /// <returns>The key of the element at the given index.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetKeyAt(int _index) {
             return collection[_index].First;
         }
@@ -193,7 +196,6 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_index">Index to get the element at.</param>
         /// <returns>The value of the element at the given index.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public U GetValueAt(int _index) {
             return collection[_index].Second;
         }
@@ -218,10 +220,12 @@ namespace EnhancedFramework.Core {
 
         // -----------------------
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int IndexOf(Pair<T, U> _element) {
             return IndexOfKey(_element.First);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Contains(Pair<T, U> _element) {
             return ContainsKey(_element.First);
         }

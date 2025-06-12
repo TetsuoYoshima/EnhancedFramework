@@ -41,7 +41,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void SetGroupValues() {
             if (FlagGroup.Value is FlagGroupBehaviour _behaviour) {

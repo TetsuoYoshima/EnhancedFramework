@@ -74,8 +74,7 @@ namespace EnhancedFramework.Timeline {
 
         #region Behaviour
         public override Playable CreatePlayable(PlayableGraph _graph, GameObject _owner) {
-            var _playable = ScriptPlayable<T>.Create(_graph, Template);
-            return _playable;
+            return ScriptPlayable<T>.Create(_graph, Template);
         }
         #endregion
     }

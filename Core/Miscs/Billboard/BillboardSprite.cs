@@ -31,23 +31,27 @@ namespace EnhancedFramework.Core {
                 return;
             }
 
-            Vector3 _objectForward = transform.forward;
+            Transform _transform = transform;
+
+            Vector3 _objectForward = _transform.forward;
             Vector3 _forward = -_camera.transform.forward;
 
             // Constraints.
-            if (lockedAxis.HasFlagUnsafe(AxisConstraints.X)) {
+            AxisConstraints _lockedAxis = lockedAxis;
+
+            if (_lockedAxis.HasFlagUnsafe(AxisConstraints.X)) {
                 _forward.x = _objectForward.x;
             }
 
-            if (lockedAxis.HasFlagUnsafe(AxisConstraints.X)) {
+            if (_lockedAxis.HasFlagUnsafe(AxisConstraints.X)) {
                 _forward.y = _objectForward.y;
             }
 
-            if (lockedAxis.HasFlagUnsafe(AxisConstraints.X)) {
+            if (_lockedAxis.HasFlagUnsafe(AxisConstraints.X)) {
                 _forward.z = _objectForward.z;
             }
 
-            transform.forward = _forward;
+            _transform.forward = _forward;
         }
         #endregion
     }

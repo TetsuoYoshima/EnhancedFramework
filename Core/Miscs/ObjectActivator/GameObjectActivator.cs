@@ -22,6 +22,8 @@ namespace EnhancedFramework.Core {
             [Tooltip("Don't toggle this object state")]
             None    = 0,
 
+            [Separator(SeparatorPosition.Top)]
+
             [Tooltip("Toggles this object state as soon as it is enabled")]
             Enable  = 1,
 

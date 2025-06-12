@@ -38,8 +38,8 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            Pause = true;
             ResetOnExit = false;
+            Pause       = true;
         }
 
         public override void OnEnter() {

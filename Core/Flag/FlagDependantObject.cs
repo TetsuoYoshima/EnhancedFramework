@@ -22,6 +22,8 @@ namespace EnhancedFramework.Core {
             [Tooltip("Don't do anything")]
             None        = 0,
 
+            [Separator(SeparatorPosition.Top)]
+
             [Tooltip("Activates this object if required flags are valid")]
             Activate    = 1,
 
@@ -35,6 +37,8 @@ namespace EnhancedFramework.Core {
         public enum UpdateMode {
             [Tooltip("State is never updated")]
             None        = 0,
+
+            [Separator(SeparatorPosition.Top)]
 
             [Tooltip("Update this object state on Init")]
             OnInit      = 1,
@@ -100,7 +104,6 @@ namespace EnhancedFramework.Core {
 
             // Registration.
             if (updateMode == UpdateMode.OnUpdate) {
-
                 FlagUtility.RegisterFlagCallback(this);
                 UpdateState();
             }
@@ -166,12 +169,14 @@ namespace EnhancedFramework.Core {
             }
 
             // Update state.
-            for (int i = 0; i < managedObjects.Length; i++) {
-                managedObjects[i].SetActive(_active);
+            ref GameObject[] _span = ref managedObjects;
+            for (int i = _span.Length; i-- > 0;) {
+                _span[i].SetActive(_active);
             }
 
-            for (int i = 0; i < inverseObjects.Length; i++) {
-                inverseObjects[i].SetActive(!_active);
+            _span = ref inverseObjects;
+            for (int i = _span.Length; i-- > 0;) {
+                _span[i].SetActive(!_active);
             }            
         }
 

@@ -37,9 +37,9 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            Ambient = null;
-            Instant = false;
             ResetOnExit = false;
+            Ambient     = null;
+            Instant     = false;
         }
 
         public override void OnEnter() {

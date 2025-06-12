@@ -19,29 +19,31 @@ namespace EnhancedFramework.Core {
     public sealed class AspectRatioEnforcer : EnhancedSingleton<AspectRatioEnforcer> {
         #region Mask
         private class DisplayMask {
-
-            public Rect Mask1 = new Rect();
-            public Rect Mask2 = new Rect();
             public Rect Viewport = new Rect();
+            public Rect Mask1    = new Rect();
+            public Rect Mask2    = new Rect();
 
             // -----------------------
 
             public void SetLetterbox(float _viewportHeight, float _maskHeight, float _viewportIncet) {
-                Mask1.Set(0f, 0f, Screen.width, _maskHeight);
-                Mask2.Set(0f, _maskHeight + _viewportHeight, Screen.width, _maskHeight);
+                float _width = Screen.width;
+
+                Mask1   .Set(0f, 0f, _width, _maskHeight);
+                Mask2   .Set(0f, _maskHeight + _viewportHeight, _width, _maskHeight);
                 Viewport.Set(0f, _viewportIncet / 2f, 1f, 1f - _viewportIncet);
             }
 
             public void SetPillarbox(float _viewportWidth, float _maskWidth, float _viewportIncet) {
-                Mask1.Set(0f, 0f, _maskWidth, Screen.height);
-                Mask2.Set(_maskWidth + _viewportWidth, 0f, _maskWidth, Screen.height);
+                float _height = Screen.height;
+
+                Mask1   .Set(0f, 0f, _maskWidth, _height);
+                Mask2   .Set(_maskWidth + _viewportWidth, 0f, _maskWidth, _height);
                 Viewport.Set(_viewportIncet / 2f, 0f, 1f - _viewportIncet, 1f);
             }
 
             public void ClearBox() {
-                Mask1 = Mask2
-                      = Rect.zero;
-
+                Mask1   .Set(0f, 0f, 0f, 0f);
+                Mask2   .Set(0f, 0f, 0f, 0f);
                 Viewport.Set(0f, 0f, 1f, 1f);
             }
         }
@@ -179,10 +181,11 @@ namespace EnhancedFramework.Core {
                 SetMaskColor(maskColor);
             }
 
-            style.normal.background = maskTexture;
+            GUIStyle _style = style;
+            _style.normal.background = maskTexture;
 
-            GUI.Box(mask.Mask1, GUIContent.none, style);
-            GUI.Box(mask.Mask2, GUIContent.none, style);
+            GUI.Box(mask.Mask1, GUIContent.none, _style);
+            GUI.Box(mask.Mask2, GUIContent.none, _style);
 
             UpdateCameraRect();
         }
@@ -212,10 +215,11 @@ namespace EnhancedFramework.Core {
         /// Updates all cameras rect according to the mask viewport.
         /// </summary>
         private void UpdateCameraRect() {
+            ref Camera[] _span = ref cameras;
             Rect _rect = mask.Viewport;
 
-            for (int i = 0; i < cameras.Length; i++) {
-                cameras[i].rect = _rect;
+            for (int i = _span.Length; i-- > 0;) {
+                _span[i].rect = _rect;
             }
         }
         #endregion

@@ -20,7 +20,10 @@ namespace EnhancedFramework.UI {
         #region Global Members
         [Section("Fading Group")]
 
+        [Tooltip("FadingObject associated with this singleton")]
         [SerializeField, Enhanced, Required] protected FadingObjectBehaviour fadingObject = null;
+
+        [Tooltip("Fading mode applied on this behaviour init")]
         [SerializeField] protected FadingMode initMode = FadingMode.Hide;
 
         // -----------------------
@@ -58,27 +61,27 @@ namespace EnhancedFramework.UI {
         // General
         // -------------------------------------------
 
-        public virtual void Show(Action _onComplete = null) {
+        public virtual void Show(Action<bool> _onComplete = null) {
             fadingObject.Show(_onComplete);
         }
 
-        public virtual void Hide(Action _onComplete = null) {
+        public virtual void Hide(Action<bool> _onComplete = null) {
             fadingObject.Hide(_onComplete);
         }
 
-        public virtual void FadeInOut(float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action _onComplete = null) {
+        public virtual void FadeInOut(float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action<bool> _onComplete = null) {
             fadingObject.FadeInOut(_duration, _onAfterFadeIn, _onBeforeFadeOut, _onComplete);
         }
 
-        public virtual void Fade(FadingMode _mode, Action _onComplete = null, float _inOutWaitDuration = .5f) {
+        public virtual void Fade(FadingMode _mode, Action<bool> _onComplete = null, float _inOutWaitDuration = .5f) {
             fadingObject.Fade(_mode, _onComplete, _inOutWaitDuration);
         }
 
-        public virtual void Invert(Action _onComplete = null) {
+        public virtual void Invert(Action<bool> _onComplete = null) {
             fadingObject.Invert(_onComplete);
         }
 
-        public virtual void SetVisibility(bool _isVisible, Action _onComplete = null) {
+        public virtual void SetVisibility(bool _isVisible, Action<bool> _onComplete = null) {
             fadingObject.SetVisibility(_isVisible, _onComplete);
         }
 
@@ -86,23 +89,23 @@ namespace EnhancedFramework.UI {
         // Instant
         // -------------------------------------------
 
-        public virtual void Show(bool _isInstant, Action _onComplete = null) {
+        public virtual void Show(bool _isInstant, Action<bool> _onComplete = null) {
             fadingObject.Show(_isInstant, _onComplete);
         }
 
-        public virtual void Hide(bool _isInstant, Action _onComplete = null) {
+        public virtual void Hide(bool _isInstant, Action<bool> _onComplete = null) {
             fadingObject.Hide(_isInstant, _onComplete);
         }
 
-        public virtual void Fade(FadingMode _mode, bool _isInstant, Action _onComplete = null, float _inOutWaitDuration = .5f) {
+        public virtual void Fade(FadingMode _mode, bool _isInstant, Action<bool> _onComplete = null, float _inOutWaitDuration = .5f) {
             fadingObject.Fade(_mode, _isInstant, _onComplete, _inOutWaitDuration);
         }
 
-        public virtual void Invert(bool _isInstant, Action _onComplete = null) {
+        public virtual void Invert(bool _isInstant, Action<bool> _onComplete = null) {
             fadingObject.Invert(_isInstant, _onComplete);
         }
 
-        public virtual void SetVisibility(bool _isVisible, bool _isInstant, Action _onComplete = null) {
+        public virtual void SetVisibility(bool _isVisible, bool _isInstant, Action<bool> _onComplete = null) {
             fadingObject.SetVisibility(_isVisible, _isInstant, _onComplete);
         }
 
@@ -116,6 +119,10 @@ namespace EnhancedFramework.UI {
 
         public virtual void SetFadeValue(float _value, bool _show) {
             fadingObject.SetFadeValue(_value, _show);
+        }
+
+        public virtual void CancelCurrentFade() {
+            fadingObject.CancelCurrentFade();
         }
 
         // -------------------------------------------

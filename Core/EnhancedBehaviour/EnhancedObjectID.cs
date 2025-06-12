@@ -47,11 +47,10 @@ namespace EnhancedFramework.Core {
         }
 
         #region Global Members
-        [SerializeField] private Type type          = Type.Null;
         [SerializeField] private string assetGUID   = string.Empty;
-
-        [SerializeField] private ulong objectID = 0L;
-        [SerializeField] private ulong prefabID = 0L;
+        [SerializeField] private ulong objectID     = 0L;
+        [SerializeField] private ulong prefabID     = 0L;
+        [SerializeField] private Type type          = Type.Null;
 
         /// <summary>
         /// Get this id associated asset guid.
@@ -75,10 +74,10 @@ namespace EnhancedFramework.Core {
         public static EnhancedObjectID Default {
             get {
                 return new EnhancedObjectID() {
-                    type        = Type.Null,
                     assetGUID   = string.Empty,
                     objectID    = 0L,
-                    prefabID    = 0L
+                    prefabID    = 0L,
+                    type        = Type.Null,
                 };
             }
         }
@@ -95,11 +94,11 @@ namespace EnhancedFramework.Core {
             if (!Application.isPlaying) {
                 GlobalObjectId _globalID = GlobalObjectId.GetGlobalObjectIdSlow(_object);
 
-                type = (Type)_globalID.identifierType;
                 assetGUID = _globalID.assetGUID.ToString();
+                objectID  = _globalID.targetObjectId;
+                prefabID  = _globalID.targetPrefabId;
 
-                objectID = _globalID.targetObjectId;
-                prefabID = _globalID.targetPrefabId;
+                type      = (Type)_globalID.identifierType;
 
                 return;
             }
@@ -128,11 +127,10 @@ namespace EnhancedFramework.Core {
 
         /// <inheritdoc cref="EnhancedObjectID"/>
         public EnhancedObjectID() {
-            type = Type.DynamicObject;
-
             assetGUID = string.Empty;
             objectID  = GenerateID();
             prefabID  = 0L;
+            type      = Type.DynamicObject;
         }
         #endregion
 
@@ -199,10 +197,10 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_id"><see cref="EnhancedObjectID"/> to copy values.</param>
         public void Copy(EnhancedObjectID _id) {
-            type      = _id.type;
             assetGUID = _id.assetGUID;
             objectID  = _id.objectID;
             prefabID  = _id.prefabID;
+            type      = _id.type;
         }
 
         /// <summary>
@@ -258,10 +256,10 @@ namespace EnhancedFramework.Core {
                 if ((_ids.Length == 2) && ulong.TryParse(_ids[0], out ulong _objID) && ulong.TryParse(_ids[1], out ulong _prefabID)) {
 
                     _objectID = new EnhancedObjectID() {
-                        type      = (Type)_type,
                         assetGUID = _components[1],
                         objectID  = _objID,
-                        prefabID  = _prefabID
+                        prefabID  = _prefabID,
+                        type      = (Type)_type,
                     };
 
                     return true;

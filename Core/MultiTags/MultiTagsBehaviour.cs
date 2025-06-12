@@ -5,6 +5,7 @@
 // ================================================================================== //
 
 using EnhancedEditor;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace EnhancedFramework.Core {
@@ -25,6 +26,7 @@ namespace EnhancedFramework.Core {
         /// The total amount of tags in this object.
         /// </summary>
         public int Count {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return Tags.Count; }
         }
         #endregion
@@ -35,6 +37,7 @@ namespace EnhancedFramework.Core {
         }
 
         public Tag this[int _index] {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return Tags[_index]; }
         }
         #endregion

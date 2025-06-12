@@ -15,10 +15,10 @@ namespace EnhancedFramework.UI {
     /// <see cref="FadingGroupEffect"/> moving the position of a <see cref="RectTransform"/> according to a source <see cref="FadingGroup"/> visibility.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Position - Fading Group Effect")]
+    [AddComponentMenu(MenuPath + "Position [Fading Group Effect]")]
     public sealed class PositionFadingGroupEffect : FadingGroupEffect {
         #region Global Members
-        [Section("Position Effect"), PropertyOrder(0)]
+        [Section("Position [Fading Group Effect]"), PropertyOrder(0)]
 
         [Tooltip("RectTransform to move on group visibility")]
         [SerializeField, Enhanced, Required] private RectTransform rectTransform = null;
@@ -44,9 +44,7 @@ namespace EnhancedFramework.UI {
         #region Enhanced Behaviour
         protected override void OnBehaviourDisabled() {
             base.OnBehaviourDisabled();
-
-            // Stop.
-            sequence.DoKill();
+            Stop();
         }
 
 
@@ -62,7 +60,7 @@ namespace EnhancedFramework.UI {
                 rectTransform = GetComponent<RectTransform>();
             }
         }
-#endif
+        #endif
         #endregion
 
         #region Effect
@@ -76,19 +74,21 @@ namespace EnhancedFramework.UI {
             sequence.DoKill();
             sequence = DOTween.Sequence(); {
 
+                RectTransform _rectTransform = rectTransform;
+
                 if (_visible) {
 
                     // Show.
-                    sequence.Join(showPositionTween.AnchorPosition(rectTransform, false));
-                    sequence.Join(showAnchorMinTween.AnchorMin(rectTransform));
-                    sequence.Join(showAnchorMaxTween.AnchorMax(rectTransform));
+                    sequence.Join(showPositionTween.AnchorPosition(_rectTransform, false));
+                    sequence.Join(showAnchorMinTween.AnchorMin(_rectTransform));
+                    sequence.Join(showAnchorMaxTween.AnchorMax(_rectTransform));
 
                 } else {
 
                     // Hide.
-                    sequence.Join(hidePositionTween.AnchorPosition(rectTransform, false));
-                    sequence.Join(hideAnchorMinTween.AnchorMin(rectTransform));
-                    sequence.Join(hideAnchorMaxTween.AnchorMax(rectTransform));
+                    sequence.Join(hidePositionTween.AnchorPosition(_rectTransform, false));
+                    sequence.Join(hideAnchorMinTween.AnchorMin(_rectTransform));
+                    sequence.Join(hideAnchorMaxTween.AnchorMax(_rectTransform));
                 }
 
                 onKilledCallback ??= OnKilled;
@@ -104,6 +104,10 @@ namespace EnhancedFramework.UI {
             void OnKilled() {
                 sequence = null;
             }
+        }
+
+        private void Stop() {
+            sequence.DoKill();
         }
         #endregion
     }

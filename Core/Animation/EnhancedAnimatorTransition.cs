@@ -11,6 +11,8 @@ using UnityEngine;
 using Range = EnhancedEditor.RangeAttribute;
 
 namespace EnhancedFramework.Core {
+    // ===== Enum & Wrapper ===== \\
+
     /// <summary>
     /// <see cref="EnhancedAnimatorTransition"/>-related state transition mode.
     /// </summary>
@@ -100,13 +102,16 @@ namespace EnhancedFramework.Core {
 
         private readonly float GetNormalizedValue(float _value, AnimationClip _animation) {
             if (IsFixedDuration) {
-                _value = (_animation.length != 0f) ? (_value / _animation.length) : 0f;
+                float _length = _animation.length;
+                _value = (_length != 0f) ? (_value / _length) : 0f;
             }
 
             return _value;
         }
         #endregion
     }
+
+    // ===== Transitions ===== \\
 
     /// <summary>
     /// Wrapper for a <see cref="EnhancedAnimatorState"/> transition.
@@ -213,7 +218,7 @@ namespace EnhancedFramework.Core {
 
                     if (IsFixedDuration) {
 
-                        float _time =  Offset + (_fromState.normalizedTime * _state.Animation.length);
+                        float _time = Offset + (_fromState.normalizedTime * _state.Animation.length);
                         _animator.CrossFadeInFixedTime(_stateHash, Duration, _layerIndex, Offset + _time);
 
                     } else {
@@ -229,7 +234,7 @@ namespace EnhancedFramework.Core {
 
                     if (IsFixedDuration) {
 
-                        float _time =  Offset + (_normalizedTime * _state.Animation.length);
+                        float _time = Offset + (_normalizedTime * _state.Animation.length);
                         _animator.CrossFadeInFixedTime(_stateHash, Duration, _layerIndex, Offset + _time);
 
                     } else {
@@ -263,9 +268,8 @@ namespace EnhancedFramework.Core {
         public static EnhancedAnimatorTransition GetCache(EnhancedAnimatorTransitionSettings _settings, StateTransitionMode _mode = StateTransitionMode.CrossFade) {
 
             EnhancedAnimatorTransition _temp = temp;
-
-            _temp.mode = _mode;
             _temp.settings = _settings;
+            _temp.mode     = _mode;
 
             return _temp;
         }
@@ -317,11 +321,12 @@ namespace EnhancedFramework.Core {
         /// <returns>True if this transition contains the given state, false otherwise.</returns>
         public bool Contains(int _hash, out EnhancedAnimatorTransition _transition) {
 
-            ref EnhancedAnimatorState[] _statesSpan = ref fromStates.Array;
+            ref EnhancedAnimatorState[] _span = ref fromStates.Array;
+            int _count = _span.Length;
 
-            for (int i = 0; i < _statesSpan.Length; i++) {
+            for (int i = 0; i < _count; i++) {
+                if (_span[i].Hash == _hash) {
 
-                if (_statesSpan[i].Hash == _hash) {
                     _transition = transition;
                     return true;
                 }

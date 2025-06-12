@@ -101,7 +101,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_audio"><see cref="AudioSource"/> to apply these settings values on.</param>
         [Button(SuperColor.Green, IsDrawnOnTop = false)]
-        public void ApplyValues(AudioSource _audio) {
+        public void ApplyValuesOn(AudioSource _audio) {
             #if UNITY_EDITOR
             if (!Application.isPlaying) {
                 Undo.RecordObject(_audio, "Apply audio settings values");
@@ -121,11 +121,11 @@ namespace EnhancedFramework.Core {
         }
 
         /// <summary>
-        /// Copies the values of a specific <see cref="AudioSource"/> in these settings.
+        /// Copies the values from a specific <see cref="AudioSource"/> in these settings.
         /// </summary>
-        /// <param name="_audio"><see cref="AudioSource"/> to copy the values in these settings.</param>
+        /// <param name="_audio"><see cref="AudioSource"/> to copy the values from in these settings.</param>
         [Button(SuperColor.Crimson, IsDrawnOnTop = false)]
-        public void CopyValues(AudioSource _audio) {
+        public void CopyValuesFrom(AudioSource _audio) {
             #if UNITY_EDITOR
             Undo.RecordObject(this, "Copy audio settings values");
             #endif

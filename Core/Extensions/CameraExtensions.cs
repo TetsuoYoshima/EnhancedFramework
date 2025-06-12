@@ -21,7 +21,7 @@ namespace EnhancedFramework.Core {
         /// <returns>This world position <see cref="Camera"/>-related anchored position.</returns>
         public static Vector2 GetAnchoredPosition(this Camera _camera, RectTransform _anchor, Vector3 _worldPosition) {
             Vector3 viewportPosition = _camera.WorldToViewportPoint(_worldPosition);
-            Vector2 canvasSize = _anchor.sizeDelta;
+            Vector2 canvasSize       = _anchor.sizeDelta;
 
             return new Vector2(viewportPosition.x * canvasSize.x, viewportPosition.y * canvasSize.y) - (canvasSize * .5f);
         }

@@ -24,7 +24,7 @@ namespace EnhancedFramework.Timeline {
     /// <summary>
     /// Plays an <see cref="AudioAsset"/> for the duration of the clip.
     /// </summary>
-    [DisplayName("Audio/Audio Asset")]
+    [DisplayName(NamePrefix + "Audio Asset")]
     public sealed class AudioAssetClip : AudioEnhancedPlayableAsset, ITimelineClipAsset {
         #region Global Members
         [Section("Audio Clip")]
@@ -78,23 +78,25 @@ namespace EnhancedFramework.Timeline {
         // -----------------------
 
         public override Playable CreatePlayable(PlayableGraph _graph, GameObject _go) {
-            if (Audio == null) {
+            AudioAsset _audio = Audio;
+            if (_audio == null) {
                 return Playable.Null;
             }
 
             // Audio Source setup.
             if (_go.TryGetComponent(out EnhancedPlayableBindingData _data) && _data.GetBinding(this, out Object _binding)) {
 
-                audioSource = _binding as AudioSource;
+                AudioSource _audioSource = _binding as AudioSource;
+                audioSource = _audioSource;
 
                 if (OverrideSettings) {
-                    Audio.SetupAudioSource(audioSource, Settings);
+                    _audio.SetupAudioSource(_audioSource, Settings);
                 } else {
-                    Audio.SetupAudioSource(audioSource);
+                    _audio.SetupAudioSource(_audioSource);
                 }
 
-                audioSource.volume *= Volume;
-                audioSource.ignoreListenerPause = _go.TryGetComponent(out PlayableDirector _playable) && (_playable.timeUpdateMode == DirectorUpdateMode.UnscaledGameTime);
+                _audioSource.volume *= Volume;
+                _audioSource.ignoreListenerPause = _go.TryGetComponent(out PlayableDirector _playable) && (_playable.timeUpdateMode == DirectorUpdateMode.UnscaledGameTime);
 
             } else {
 
@@ -106,12 +108,11 @@ namespace EnhancedFramework.Timeline {
             // So in order to create an instance of the class and set it up, we use Reflection.
 
             if (setScritInstanceParameters.Length == 0) {
-
                 object _properties = Activator.CreateInstance(propertiesType);
                 setScritInstanceParameters = new object[] { _properties };
             }
 
-            AudioClipPlayable _audioClipPlayable = AudioClipPlayable.Create(_graph, Audio.GetClip(), Audio.Loop);
+            AudioClipPlayable _audioClipPlayable = AudioClipPlayable.Create(_graph, _audio.GetClip(), _audio.Loop);
             setScriptInstanceMethod.Invoke(_audioClipPlayable.GetHandle(), setScritInstanceParameters);
 
             return _audioClipPlayable;
@@ -135,19 +136,20 @@ namespace EnhancedFramework.Timeline {
             OverrideSettings = Settings != null;
 
             // Default values.
-            if (Audio == null) {
+            AudioAsset _audio = Audio;
+            if (_audio == null) {
                 return;
             }
 
             // Clip properties.
-            _clip.duration      = Audio.Duration;
-            _clip.displayName   = Audio.name.RemovePrefix();
+            _clip.duration      = _audio.Duration;
+            _clip.displayName   = _audio.name.RemovePrefix();
 
-            _clip.easeInDuration    = Audio.FadeInDuration;
-            _clip.easeOutDuration   = Audio.FadeOutDuration;
+            _clip.easeInDuration    = _audio.FadeInDuration;
+            _clip.easeOutDuration   = _audio.FadeOutDuration;
 
-            _clip.mixInCurve    = Audio.FadeInCurve;
-            _clip.mixOutCurve   = Audio.FadeOutCurve;
+            _clip.mixInCurve    = _audio.FadeInCurve;
+            _clip.mixOutCurve   = _audio.FadeOutCurve;
         }
         #endregion
     }

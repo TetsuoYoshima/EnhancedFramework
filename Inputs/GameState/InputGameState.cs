@@ -16,13 +16,13 @@ namespace EnhancedFramework.Inputs.GameStates {
         /// Enables the associated input at the creation of the state,
         /// and disable it when it terminates.
         /// </summary>
-        Creation,
+        Creation   = 0,
 
         /// <summary>
         /// Enables the associated input when the state becomes the active one,
         /// and disable it when it stops to be.
         /// </summary>
-        Activation,
+        Activation = 1,
     }
 
     /// <summary>

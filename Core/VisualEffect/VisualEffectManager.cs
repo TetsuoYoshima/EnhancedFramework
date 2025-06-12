@@ -22,6 +22,7 @@ namespace EnhancedFramework.Core {
         #region Global Members
         [Section("Visual Effect Manager")]
 
+        [Tooltip("Pooling-related reference parent Transform")]
         [SerializeField, Enhanced, Required] private Transform poolRoot = null;
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
@@ -59,10 +60,10 @@ namespace EnhancedFramework.Core {
 
         void IStableUpdate.Update() {
             // Particles update.
-            List<VisualEffectPlayer> _effectsSpan = visualEffects;
+            ref List<VisualEffectPlayer> _span = ref visualEffects;
 
-            for (int i = _effectsSpan.Count; i-- > 0;) {
-                _effectsSpan[i].EffectUpdate();
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].EffectUpdate();
             }
         }
 
@@ -77,14 +78,14 @@ namespace EnhancedFramework.Core {
 
         private void OnStartLoading() {
             // Stop playing all effects.
-            List<VisualEffectPlayer> _effectsSpan = visualEffects;
+            ref List<VisualEffectPlayer> _span = ref visualEffects;
 
-            for (int i = _effectsSpan.Count; i-- > 0;) {
-                _effectsSpan[i].Stop(ParticleSystemStopBehavior.StopEmittingAndClear);
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].Stop(ParticleSystemStopBehavior.StopEmittingAndClear);
             }
 
             // Clear pools.
-            List<Pair<VisualEffectAsset, Transform>> _poolSpan = visualEffectPools.collection;
+            ref List<Pair<VisualEffectAsset, Transform>> _poolSpan = ref visualEffectPools.collection;
             
             for (int i = _poolSpan.Count; i-- > 0;) {
 
@@ -102,7 +103,7 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Registration
-        private static readonly List<VisualEffectPlayer> visualEffects = new List<VisualEffectPlayer>();
+        private static List<VisualEffectPlayer> visualEffects = new List<VisualEffectPlayer>();
 
         // -----------------------
 
@@ -119,7 +120,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_player"><see cref="VisualEffectPlayer"/> to unregister.</param>
         internal static void UnregisterPlayer(VisualEffectPlayer _player) {
-            visualEffects.Remove(_player);
+            visualEffects.RemoveSwap(_player);
         }
         #endregion
 
@@ -170,11 +171,11 @@ namespace EnhancedFramework.Core {
             }
 
             // Player pause.
-            List<VisualEffectPlayer> effectsSpan = visualEffects;
-            int _count = effectsSpan.Count;
+            ref List<VisualEffectPlayer> _span = ref visualEffects;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
-                VisualEffectPlayer _effect = effectsSpan[i];
+                VisualEffectPlayer _effect = _span[i];
                 if (!_effect.IgnorePause) {
 
                     // Pause / Resume.

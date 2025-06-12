@@ -44,8 +44,9 @@ namespace EnhancedFramework.PlayMaker.Timeline {
         protected override void OnPlay(Playable _playable, FrameData _info) {
             base.OnPlay(_playable, _info);
 
-            if (bindingObject != null) {
-                bindingObject.SendEvent(EventName);
+            PlayMakerFSM _fsm = bindingObject;
+            if (_fsm != null) {
+                _fsm.SendEvent(EventName);
             }
         }
         #endregion

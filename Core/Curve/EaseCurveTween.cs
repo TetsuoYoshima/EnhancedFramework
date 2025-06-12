@@ -14,6 +14,8 @@ using UnityEngine;
 using Min = EnhancedEditor.MinAttribute;
 
 namespace EnhancedFramework.Core {
+    // ===== Base ===== \\
+    
     /// <summary>
     /// Base class for ease/curve values.
     /// <br/> Prefer using <see cref="EaseValue"/>/<see cref="CurveValue"/> instead of this.
@@ -30,7 +32,7 @@ namespace EnhancedFramework.Core {
         /// Duration of the tween.
         /// </summary>
         [Enhanced, Min(.001f)] public float Duration = 1f;
-        [Enhanced, Min(0f)] public float Delay = 0f;
+        [Enhanced, Min(0f)]    public float Delay    = 0f;
 
         // -------------------------------------------
         // Constructor(s)
@@ -39,9 +41,9 @@ namespace EnhancedFramework.Core {
         protected EaseCurveTween() { }
 
         protected EaseCurveTween(T _value, float _duration, float _delay) {
-            Value = _value;
             Duration = _duration;
-            Delay = _delay;
+            Value    = _value;
+            Delay    = _delay;
         }
 
         // -------------------------------------------
@@ -185,6 +187,8 @@ namespace EnhancedFramework.Core {
         }
         #endregion
     }
+
+    // ===== Derived ===== \\
 
     /// <summary>
     /// Wrapper utility class for an ease curve type tween.

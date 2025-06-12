@@ -18,11 +18,11 @@ namespace EnhancedFramework.UI {
     /// <see cref="FadingGroupEffect"/> playing an idle animation while a source <see cref="FadingGroup"/> is visible.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Idle Anim - Fading Group Effect")]
+    [AddComponentMenu(MenuPath + "Idle Anim - [Fading Group Effect]")]
     #pragma warning disable
     public sealed class IdleAnimationFadingGroupEffect : FadingGroupEffect {
         #region Global Members
-        [Section("Idle Animation Effect"), PropertyOrder(0)]
+        [Section("Idle Animation [Fading Group Effect]"), PropertyOrder(0)]
 
         [Tooltip("RectTransform to animate")]
         [SerializeField, Enhanced, Required] private RectTransform rectTransform = null;
@@ -63,10 +63,7 @@ namespace EnhancedFramework.UI {
         #region Enhanced Behaviour
         protected override void OnBehaviourDisabled() {
             base.OnBehaviourDisabled();
-
-            // Stop.
-            delay.Cancel();
-            sequence.DoKill();
+            Stop();
         }
 
         #if UNITY_EDITOR
@@ -81,7 +78,7 @@ namespace EnhancedFramework.UI {
                 rectTransform = GetComponent<RectTransform>();
             }
         }
-#endif
+        #endif
         #endregion
 
         #region Effect
@@ -91,8 +88,8 @@ namespace EnhancedFramework.UI {
         private Vector2 originalPosition = Vector2.zero;
         private Vector2 originalSize     = Vector2.zero;
 
-        private Sequence sequence   = null;
-        private DelayHandler delay  = default;
+        private DelayHandler delay = default;
+        private Sequence sequence  = null;
 
         // -----------------------
 
@@ -149,6 +146,11 @@ namespace EnhancedFramework.UI {
                 rectTransform.anchoredPosition = originalPosition;
                 rectTransform.sizeDelta = originalSize;
             }
+        }
+
+        private void Stop() {
+            sequence.DoKill();
+            delay.Cancel();
         }
         #endregion
     }

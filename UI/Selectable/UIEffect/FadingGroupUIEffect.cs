@@ -13,10 +13,10 @@ namespace EnhancedFramework.UI {
     /// Fades a <see cref="FadingGroup"/>.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Fading Group UI Effect"), DisallowMultipleComponent]
+    [AddComponentMenu(MenuPath + "Fading Group [UI Effect]"), DisallowMultipleComponent]
     public sealed class FadingGroupUIEffect : EnhancedSelectableEffect {
         #region Global Members
-        [Section("Fading Group Effect")]
+        [Section("Fading Group [UI Effect]")]
 
         [SerializeField, Enhanced, Required] private FadingObjectBehaviour group = null;
 

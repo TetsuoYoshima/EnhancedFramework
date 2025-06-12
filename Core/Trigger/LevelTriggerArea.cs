@@ -28,6 +28,8 @@ namespace EnhancedFramework.Core {
         private enum HandlesMode {
             None    = 0,
 
+            [Separator(SeparatorPosition.Top)]
+
             Area    = 1,
             Portals = 2,
         }
@@ -76,17 +78,17 @@ namespace EnhancedFramework.Core {
         private static class Styles {
             public static readonly GUIStyle HandleStyle = new GUIStyle() {
                 fontStyle = FontStyle.Bold,
-                fontSize= 18,
-                normal = new GUIStyleState() {
+                fontSize  = 18,
+                normal    = new GUIStyleState() {
                     textColor = SuperColor.SmokyBlack.Get()
                 },
             };
         }
 
-        private const float AreaPointHandlesSize = .2f;
         private const float AreaPointHandlesAlpha = .7f;
+        private const float AreaPointHandlesSize  = .2f;
 
-        private static Tool lastTool = Tool.None;
+        private static Tool lastTool  = Tool.None;
         private static bool isEditing = false;
         private static int editingAreaID = -1;
 
@@ -124,7 +126,7 @@ namespace EnhancedFramework.Core {
 
             Transform _transform = transform;
             Quaternion _rotation = _transform.rotation;
-            Vector3 _position = _transform.position;
+            Vector3 _position    = _transform.position;
 
             if (isEditing && (editingAreaID == GetInstanceID())) {
 
@@ -181,7 +183,6 @@ namespace EnhancedFramework.Core {
 
         #region Trigger
         public const float UpdateCooldwonDefaultDuration = .05f;
-
         private readonly PairCollection<ITriggerActor, bool> actors = new PairCollection<ITriggerActor, bool>();
 
         /// <summary>
@@ -203,11 +204,11 @@ namespace EnhancedFramework.Core {
             Vector3 _position    = _transform.position;
 
             // Check if any actor entered / exited the area.
-            List<Pair<ITriggerActor, bool>> _actorsSpan = actors.collection;
+            ref List<Pair<ITriggerActor, bool>> _span = ref actors.collection;
 
-            for (int i = 0; i < _actorsSpan.Count; i++) {
+            for (int i = _span.Count; i-- > 0;) {
 
-                Pair<ITriggerActor, bool> _pair = _actorsSpan[i];
+                Pair<ITriggerActor, bool> _pair = _span[i];
                 ITriggerActor _actor = _pair.First;
 
                 bool _inArea = IsInArea(_actor);
@@ -224,8 +225,8 @@ namespace EnhancedFramework.Core {
                     _pair.Second = _inArea;
 
                     // Security (happens when instantly exiting the trigger).
-                    if ((i < _actorsSpan.Count) && (_actor == _actorsSpan[i].First)) {
-                        _actorsSpan[i] = _pair;
+                    if ((i < _span.Count) && (_actor == _span[i].First)) {
+                        _span[i] = _pair;
                     }
                 }
             }
@@ -334,13 +335,13 @@ namespace EnhancedFramework.Core {
                 _extents = _extents.Divide(_scale);
             }
 
-            _bounds.center = _center;
+            _bounds.center  = _center;
             _bounds.extents = new Vector3(Mathf.Abs(_extents.x), Mathf.Abs(_extents.y), Mathf.Abs(_extents.z));
 
             _transform.rotation = _rotation;
 
             if (!_scale.IsNull()) {
-                _bounds.center = _bounds.center.Divide(_scale);
+                _bounds.center  = _bounds.center.Divide(_scale);
                 _bounds.extents = _bounds.extents.Divide(_scale);
             }
 
@@ -357,7 +358,7 @@ namespace EnhancedFramework.Core {
 
                 case BoxCollider _box:
                     _box.center = _bounds.center;
-                    _box.size = _bounds.size;
+                    _box.size   = _bounds.size;
                     break;
 
                 default:

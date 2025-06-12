@@ -59,7 +59,9 @@ namespace EnhancedFramework.PlayMaker {
             DoSetColorValue();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void DoSetColorValue() {
             ColorVariable.Value = ((SuperColor)SuperColor.Value).Get();

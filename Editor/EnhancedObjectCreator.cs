@@ -276,9 +276,9 @@ namespace EnhancedFramework.Editor {
 
             // Area.
             if (_object.TryGetComponent(out LevelTriggerArea _trigger)) {
-                _trigger.AreaVertices.AddRange(new Vector3[] { new Vector3(-.5f, 0f, .5f),
-                                                               new Vector3(.5f, 0f, .5f),
-                                                               new Vector3(.5f, 0f, -.5f),
+                _trigger.AreaVertices.AddRange(new Vector3[] { new Vector3(-.5f, 0f,  .5f),
+                                                               new Vector3( .5f, 0f,  .5f),
+                                                               new Vector3( .5f, 0f, -.5f),
                                                                new Vector3(-.5f, 0f, -.5f) });
             }
 

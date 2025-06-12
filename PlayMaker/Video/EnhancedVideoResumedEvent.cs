@@ -6,6 +6,7 @@
 
 using EnhancedFramework.Core;
 using HutongGames.PlayMaker;
+using System;
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -32,18 +33,23 @@ namespace EnhancedFramework.PlayMaker {
         #endregion
 
         #region Behaviour
+        private Action<VideoPlayer> onResumed = null;
+
+        // -----------------------
+
         public override void Reset() {
             base.Reset();
 
-            Video = null;
             ResumedEvent = null;
+            Video        = null;
         }
 
         public override void OnEnter() {
             base.OnEnter();
 
             if (Video.Value is EnhancedVideoPlayer _video) {
-                _video.Resumed += OnResumed;
+                onResumed ??= OnResumed;
+                _video.Resumed += onResumed;
             }
 
             Finish();
@@ -53,11 +59,13 @@ namespace EnhancedFramework.PlayMaker {
             base.OnExit();
 
             if (Video.Value is EnhancedVideoPlayer _video) {
-                _video.Resumed -= OnResumed;
+                _video.Resumed -= onResumed;
             }
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void OnResumed(VideoPlayer _video) {
             Fsm.Event(ResumedEvent);

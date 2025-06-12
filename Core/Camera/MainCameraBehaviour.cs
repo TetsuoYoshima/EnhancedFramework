@@ -22,14 +22,14 @@ namespace EnhancedFramework.Core {
         // -----------------------
 
         /// <summary>
-        /// Main <see cref="Camera"/> instance.
-        /// </summary>
-        public static Camera MainCamera { get; private set; } = null;
-
-        /// <summary>
         /// Whether the <see cref="MainCamera"/> reference is currently set or not.
         /// </summary>
         public static bool HasMainCamera { get; private set; } = false;
+
+        /// <summary>
+        /// Main <see cref="Camera"/> instance.
+        /// </summary>
+        public static Camera MainCamera { get; private set; } = null;
         #endregion
 
         #region Enhanced Behaviour

@@ -25,6 +25,7 @@ using DG.Tweening.Core;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using System.Collections.Generic;
 #endif
 
 #if EDITOR_COROUTINE
@@ -142,13 +143,13 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Global Members
-        private int id = 0;
         private State state = State.Inactive;
+        private int id = 0;
 
         /// <summary>
         /// Called when this tween is stopped, with a <see cref="bool"/> parameter indicating if it was successfully completed or not.
         /// </summary>
-        public Action<bool> OnStopped = null;
+        public List<Action<bool>> OnStopped = new List<Action<bool>>();
 
         // -----------------------
 
@@ -170,6 +171,15 @@ namespace EnhancedFramework.Core {
 
         private bool doComplete = false; // Used to complete coroutines.
 
+        private Action<float> tweenSetter1 = null;
+        private Action<float> tweenSetter2 = null;
+        private Action<float> tweenSetter3 = null;
+
+        private Action<float> setter = null;
+        private AnimationCurve curve = null;
+        private float fromValue = 0f;
+        private float toValue   = 0f;
+
         #if DOTWEEN
         private DOGetter<float> tweenGetter = null;
         private DOSetter<float> tweenSetter = null;
@@ -179,7 +189,12 @@ namespace EnhancedFramework.Core {
         private Action<float> tweenCurrentSetter = null;
 
         private Tween tween = null;
-        private float time = 0f;
+        private float time  = 0f;
+
+        private Action<float> tweenDoSetter1 = null;
+        private Action<float> tweenDoSetter2 = null;
+
+        private Ease ease   = Ease.Unset;
         #else
         private Coroutine coroutine = null;
         #endif
@@ -194,28 +209,42 @@ namespace EnhancedFramework.Core {
         /// <param name="_ease">Tween evaluation <see cref="Ease"/>.</param>
         /// <inheritdoc cref="Tween(float, float, Action{float}, float, bool, Action{bool})"/>
         public TweenHandler Tween(float _from, float _to, Action<float> _setter, float _duration, Ease _ease, bool _realTime = false, Action<bool> _onStopped = null) {
-            return Tween(Set, _duration, _ease, _realTime, _onStopped);
+
+            fromValue = _from;
+            toValue   = _to;
+            setter    = _setter;
+            ease      = _ease;
+
+            tweenDoSetter1 ??= Set;
+            return Tween(tweenDoSetter1, _duration, _realTime, _onStopped);
 
             // ----- Local Method ----- \\
 
             void Set(float _percent) {
 
-                float _value = _from + ((_to - _from) * _percent);
-                _setter(_value);
+                _percent = DOVirtual.EasedValue(0f, 1f, _percent, ease);
+                float _value = fromValue + ((toValue - fromValue) * _percent);
+
+                setter(_value);
             }
         }
 
         /// <param name="_ease">Tween evaluation <see cref="Ease"/>.</param>
         /// <inheritdoc cref="Tween(Action{float}, float, bool, Action{bool})"/>
         public TweenHandler Tween(Action<float> _setter, float _duration, Ease _ease, bool _realTime = false, Action<bool> _onStopped = null) {
-            return Tween(Set, _duration, _realTime, _onStopped);
+
+            setter = _setter;
+            ease   = _ease;
+
+            tweenDoSetter2 ??= Set;
+            return Tween(tweenDoSetter2, _duration, _realTime, _onStopped);
 
             // ----- Local Method ----- \\
 
             void Set(float _percent) {
 
-                _percent = DOVirtual.EasedValue(0f, 1f, _percent, _ease);
-                _setter(_percent);
+                _percent = DOVirtual.EasedValue(0f, 1f, _percent, ease);
+                setter(_percent);
             }
         }
         #endif
@@ -223,28 +252,43 @@ namespace EnhancedFramework.Core {
         /// <param name="_curve">Tween evaluation curve.</param>
         /// <inheritdoc cref="Tween(float, float, Action{float}, float, bool, Action{bool})"/>
         public TweenHandler Tween(float _from, float _to, Action<float> _setter, float _duration, AnimationCurve _curve, bool _realTime = false, Action<bool> _onStopped = null) {
-            return Tween(Set, _duration, _curve, _realTime, _onStopped);
+
+            fromValue = _from;
+            toValue   = _to;
+            setter    = _setter;
+            curve     = _curve;
+
+            tweenSetter1 ??= Set;
+            return Tween(tweenSetter1, _duration, _realTime, _onStopped);
 
             // ----- Local Method ----- \\
 
             void Set(float _percent) {
 
-                float _value = _from + ((_to - _from) * _percent);
-                _setter(_value);
+                _percent = (_percent == 0f) ? _percent : curve.Evaluate(_percent * curve.Duration());
+                float _value = fromValue + ((toValue - fromValue) * _percent);
+
+                setter(_value);
             }
         }
 
         /// <param name="_curve">Tween evaluation curve.</param>
         /// <inheritdoc cref="Tween(Action{float}, float, bool, Action{bool})"/>
         public TweenHandler Tween(Action<float> _setter, float _duration, AnimationCurve _curve, bool _realTime = false, Action<bool> _onStopped = null) {
-            return Tween(Set, _duration, _realTime, _onStopped);
+
+            setter = _setter;
+            curve  = _curve;
+
+            tweenSetter2 ??= Set;
+
+            return Tween(tweenSetter2, _duration, _realTime, _onStopped);
 
             // ----- Local Method ----- \\
 
             void Set(float _percent) {
 
-                _percent = (_percent == 0f) ? _percent : _curve.Evaluate(_percent * _curve.Duration());
-                _setter(_percent);
+                _percent = (_percent == 0f) ? _percent : curve.Evaluate(_percent * curve.Duration());
+                setter(_percent);
             }
         }
 
@@ -257,14 +301,20 @@ namespace EnhancedFramework.Core {
         /// <param name="_setter">Called to set the new float value.</param>
         /// <inheritdoc cref="Tween(Action{float}, float, bool, Action{bool})"/>
         public TweenHandler Tween(float _from, float _to, Action<float> _setter, float _duration, bool _realTime = false, Action<bool> _onStopped = null) {
-            return Tween(Set, _duration, _realTime, _onStopped);
+
+            fromValue = _from;
+            toValue   = _to;
+            setter    = _setter;
+
+            tweenSetter3 ??= Set;
+            return Tween(tweenSetter3, _duration, _realTime, _onStopped);
 
             // ----- Local Method ----- \\
 
             void Set(float _percent) {
 
-                float _value = _from + ((_to - _from) * _percent);
-                _setter(_value);
+                float _value = fromValue + ((toValue - fromValue) * _percent);
+                setter(_value);
             }
         }
 
@@ -285,7 +335,7 @@ namespace EnhancedFramework.Core {
             // Prepare.
             SetState(State.Playing);
 
-            OnStopped = _onStopped;
+            OnStopped.ReplaceBy(_onStopped);
             id = ++lastID;
 
             TweenHandler _handler = new TweenHandler(this, id);
@@ -401,9 +451,15 @@ namespace EnhancedFramework.Core {
             doComplete = false;
             SetState(State.Inactive);
 
-            // Callback.
-            OnStopped?.Invoke(_isCompleted);
-            OnStopped = null;
+            // Callback(s).
+            ref List<Action<bool>> _span = ref OnStopped;
+            int _count = _span.Count;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i]?.Invoke(_isCompleted);
+            }
+
+            _span.Clear();
 
             Tweener.ReleaseTween(this);
         }
@@ -513,6 +569,15 @@ namespace EnhancedFramework.Core {
 
         #region Utility
         /// <summary>
+        /// Registers a new callback when this tween ends.
+        /// </summary>
+        public void AddCallback(Action<bool> _onStopped) {
+            if (_onStopped != null) {
+                OnStopped.Add(_onStopped);
+            }
+        }
+
+        /// <summary>
         /// Sets the state of this object.
         /// </summary>
         /// <param name="_state">New state of this object.</param>
@@ -521,6 +586,8 @@ namespace EnhancedFramework.Core {
         }
         #endregion
     }
+
+    // ===== Tweener ===== \\
 
     /// <summary>
     /// Utility class used to dynamically tween values.
@@ -546,6 +613,10 @@ namespace EnhancedFramework.Core {
         }
 
         #if UNITY_EDITOR
+        // -------------------------------------------
+        // Editor
+        // -------------------------------------------
+
         // Editor constructor.
         static Tweener() {
             Initialize();

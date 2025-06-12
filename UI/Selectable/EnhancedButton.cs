@@ -34,22 +34,26 @@ namespace EnhancedFramework.UI {
         #endregion
 
         #region Button
+        private const string PressMarkerName = "Button.onClick";
+
+        // -----------------------
+
         public void Press() {
 
             if (IsActive() && IsInteractable()) {
 
-                UISystemProfilerApi.AddMarker("Button.onClick", this);
+                UISystemProfilerApi.AddMarker(PressMarkerName, this);
                 m_OnClick.Invoke();
             }
         }
 
-        public virtual void OnPointerClick(PointerEventData eventData) {
-            if (eventData.button == PointerEventData.InputButton.Left) {
+        public virtual void OnPointerClick(PointerEventData _eventData) {
+            if (_eventData.button == PointerEventData.InputButton.Left) {
                 Press();
             }
         }
 
-        public virtual void OnSubmit(BaseEventData eventData) {
+        public virtual void OnSubmit(BaseEventData _eventData) {
             Press();
 
             if (IsActive() && IsInteractable()) {
@@ -59,11 +63,10 @@ namespace EnhancedFramework.UI {
         }
 
         private IEnumerator OnFinishSubmit() {
-            float _fadeTime = colors.fadeDuration;
+            float _fadeTime    = colors.fadeDuration;
             float _elapsedTime = 0f;
 
             while (_elapsedTime < _fadeTime) {
-
                 _elapsedTime += Time.unscaledDeltaTime;
                 yield return null;
             }
