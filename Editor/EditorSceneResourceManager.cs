@@ -32,7 +32,7 @@ namespace EnhancedFramework.Editor {
         // -------------------------------------------
 
         private static void OnSavingScene(Scene _scene, string _path) {
-            SceneResourceManager[] _instances = Object.FindObjectsOfType<SceneResourceManager>();
+            SceneResourceManager[] _instances = Object.FindObjectsByType<SceneResourceManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             int _instanceCount = 0;
 
             // Register resources when a scene is being saved.
@@ -60,7 +60,7 @@ namespace EnhancedFramework.Editor {
             }
 
             // Get resources before entering play mode.
-            SceneResourceManager[] _instances = Object.FindObjectsOfType<SceneResourceManager>();
+            SceneResourceManager[] _instances = Object.FindObjectsByType<SceneResourceManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (SceneResourceManager _instance in _instances) {
                 _instance.GetSceneResources();
             }

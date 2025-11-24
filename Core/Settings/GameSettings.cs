@@ -78,7 +78,7 @@ namespace EnhancedFramework.Core.Settings {
             }
 
             GameSettings _settings = AssetDatabase.LoadAssetAtPath<GameSettings>(AssetDatabase.GUIDToAssetPath(_guids[0]));
-            PlayerSettings.GetScriptingDefineSymbolsForGroup(_target, out string[] _defines);
+            PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(_target), out string[] _defines);
 
             _settings.scriptingSymbols = _defines;
             EditorUtility.SetDirty(_settings);

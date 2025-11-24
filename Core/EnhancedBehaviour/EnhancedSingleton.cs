@@ -37,7 +37,7 @@ namespace EnhancedFramework.Core {
             get {
                 #if UNITY_EDITOR
                 if (!Application.isPlaying && (instance == null)) {
-                    instance = FindObjectOfType<T>();
+                    instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
                 }
                 #endif
 

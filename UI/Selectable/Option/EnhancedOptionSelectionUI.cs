@@ -14,10 +14,10 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 #if LOCALIZATION
 using UnityEngine.Localization;
-using UnityEngine.UI;
 #endif
 
 namespace EnhancedFramework.UI {

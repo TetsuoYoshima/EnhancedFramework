@@ -76,8 +76,6 @@ namespace EnhancedFramework.Rendering {
         #endregion
 
         #region Behaviour
-        private const int DefaultGUID = 0;
-
         private Action<float> onSetFadeValue  = null;
         private Action<bool>  onFadeStopped   = null;
         private Action<bool>  onFadeCompleteCallback = null;
@@ -127,9 +125,9 @@ namespace EnhancedFramework.Rendering {
             }
             #else
             if (_show) {
-                _alpha = Mathf.Lerp(FadeWeight.x, FadeWeight.y, _value);
+                _weight = Mathf.Lerp(FadeWeight.x, FadeWeight.y, _value);
             } else {
-                _alpha = Mathf.Lerp(FadeWeight.y, FadeWeight.x, _value);
+                _weight = Mathf.Lerp(FadeWeight.y, FadeWeight.x, _value);
             }
             #endif
 

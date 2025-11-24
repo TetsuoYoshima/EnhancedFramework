@@ -182,7 +182,7 @@ namespace EnhancedFramework.Editor {
         }
 
         private static bool GetReference(EnhancedObjectID _id, out CrossSceneObject _object) {
-            CrossSceneObject[] _objects = Object.FindObjectsOfType<CrossSceneObject>(true);
+            CrossSceneObject[] _objects = Object.FindObjectsByType<CrossSceneObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
             foreach (CrossSceneObject _temp in _objects) {
                 if (_temp.ID == _id) {

@@ -5,7 +5,7 @@
 // ================================================================================== //
 
 #if DOTWEEN_ENABLED
-#define DOTWEEN
+#define TWEENER
 #endif
 
 #if UNITY_EDITOR && EDITOR_COROUTINE_ENABLED
@@ -18,7 +18,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-#if DOTWEEN
+#if TWEENER
 using DG.Tweening;
 using DG.Tweening.Core;
 #endif
@@ -180,7 +180,7 @@ namespace EnhancedFramework.Core {
         private float fromValue = 0f;
         private float toValue   = 0f;
 
-        #if DOTWEEN
+        #if TWEENER
         private DOGetter<float> tweenGetter = null;
         private DOSetter<float> tweenSetter = null;
         private TweenCallback tweenCompleteCallback = null;
@@ -205,7 +205,7 @@ namespace EnhancedFramework.Core {
 
         // -----------------------
 
-        #if DOTWEEN
+        #if TWEENER
         /// <param name="_ease">Tween evaluation <see cref="Ease"/>.</param>
         /// <inheritdoc cref="Tween(float, float, Action{float}, float, bool, Action{bool})"/>
         public TweenHandler Tween(float _from, float _to, Action<float> _setter, float _duration, Ease _ease, bool _realTime = false, Action<bool> _onStopped = null) {
@@ -362,7 +362,7 @@ namespace EnhancedFramework.Core {
             }
             #endif
 
-            #if DOTWEEN
+            #if TWEENER
             // Tween.
             time = 0f;
             tweenCurrentSetter = _setter;
@@ -397,7 +397,7 @@ namespace EnhancedFramework.Core {
                 tween = null;
                 OnStop(false);
             }
-            #else
+#else
             coroutine = UpdateManager.Instance.StartCoroutine(DoTween(_setter, _duration, _realTime));
             #endif
 
@@ -478,7 +478,7 @@ namespace EnhancedFramework.Core {
                 return;
             }
 
-            #if DOTWEEN
+            #if TWEENER
             tween.Pause();
             #endif
 
@@ -495,7 +495,7 @@ namespace EnhancedFramework.Core {
                 return;
             }
 
-            #if DOTWEEN
+            #if TWEENER
             tween.Play();
             #endif
 
@@ -517,7 +517,7 @@ namespace EnhancedFramework.Core {
 
             doComplete = true;
 
-            #if DOTWEEN
+            #if TWEENER
             tween.Complete(true);
             #endif
         }
@@ -541,7 +541,7 @@ namespace EnhancedFramework.Core {
             }
             #endif
 
-            #if DOTWEEN
+            #if TWEENER
             tween.DoKill();
             #else
             if (coroutine != null) {
@@ -621,11 +621,11 @@ namespace EnhancedFramework.Core {
         static Tweener() {
             Initialize();
         }
-        #endif
+#endif
         #endregion
 
         #region Behaviour
-        #if DOTWEEN
+        #if TWEENER
         /// <inheritdoc cref="EnhancedTween.Tween(float, float, Action{float}, float, Ease, bool, Action{bool})"/>
         public static TweenHandler Tween(float _from, float _to, Action<float> _setter, float _duration, Ease _ease, bool _realTime = false, Action<bool> _onStopped = null) {
             return GetTween().Tween(_from, _to, _setter, _duration, _ease, _realTime, _onStopped);

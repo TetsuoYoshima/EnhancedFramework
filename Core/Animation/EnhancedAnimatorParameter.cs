@@ -5,7 +5,7 @@
 // ================================================================================== //
 
 #if DOTWEEN_ENABLED
-#define DOTWEEN
+#define TWEENER
 #endif
 
 using EnhancedEditor;
@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-#if DOTWEEN
+#if TWEENER
 using DG.Tweening;
 #endif
 
@@ -73,7 +73,7 @@ namespace EnhancedFramework.Core {
                 delay = Delayer.Call(DelayValue, _callback, RealTime);
             }
 
-            #if DOTWEEN
+            #if TWEENER
             /// <inheritdoc cref="Tweener.Tween(float, float, Action{float}, float, Ease, bool, Action{bool})"/>
             public void Tween(float _from, float _to, Action<Animator, float> _setter, float _duration, Ease _ease) {
 
@@ -152,7 +152,7 @@ namespace EnhancedFramework.Core {
         [Tooltip("Parameter update tween duration (in seconds)")]
         [SerializeField, Enhanced, ShowIf(nameof(CanUseTween)), Range(0f, 10f)] private float updateValueDuration = 0f;
 
-        #if DOTWEEN
+        #if TWEENER
         [Tooltip("Parameter update evaluation ease")]
         [SerializeField, Enhanced, ShowIf(nameof(CanUseTween))] private Ease updateEase = Ease.Linear;
         #else
@@ -442,7 +442,7 @@ namespace EnhancedFramework.Core {
 
                 complexUpdateSetter ??= OnSetCompelexValue;
 
-                #if DOTWEEN
+                #if TWEENER
                 _wrapper.Tween(_from, _to, complexUpdateSetter, updateValueDuration, updateEase);
                 #else
                 _wrapper.Tween(_from, _to, complexUpdateSetter, updateValueDuration, updateCurve);

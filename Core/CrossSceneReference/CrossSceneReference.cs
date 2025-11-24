@@ -89,7 +89,7 @@ namespace EnhancedFramework.Core {
             bool GetReference(out CrossSceneObject _reference) {
                 #if UNITY_EDITOR
                 if (!Application.isPlaying) {
-                    CrossSceneObject[] _objects = Object.FindObjectsOfType<CrossSceneObject>();
+                    CrossSceneObject[] _objects = Object.FindObjectsByType<CrossSceneObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
                     foreach (CrossSceneObject _object in _objects) {
                         if (_object.ID == ReferenceID) {

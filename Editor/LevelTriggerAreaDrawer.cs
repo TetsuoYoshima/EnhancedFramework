@@ -71,7 +71,7 @@ namespace EnhancedFramework.Editor {
         // -------------------------------------------
 
         private static void GetTriggerAras() {
-            triggerAreas = Object.FindObjectsOfType<LevelTriggerArea>();
+            triggerAreas = Object.FindObjectsByType<LevelTriggerArea>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         }
         #endregion
     }
