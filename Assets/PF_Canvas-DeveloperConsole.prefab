@@ -3373,10 +3373,6 @@ MonoBehaviour:
     objectID: 0
     prefabID: 0
     type: 0
-  gameStateType:
-    typeName: TwinPeaks.Core.GameStates.DeveloperConsoleGameState, TwinPeaks.Core
-    constraints: 0
-    interfaces: []
   OpenConsoleInput: {fileID: 11400000, guid: ce7520f7796d66948a9a8f313609b341, type: 2}
   group: {fileID: 1794798634323898723}
   resizePanel: {fileID: 1141391961}
@@ -4098,7 +4094,7 @@ MonoBehaviour:
     issues.
   Tags:
     Tags: []
-  lastModifiedDate: 22/06/2025 10:40:31
+  lastModifiedDate: 21/03/2023 21:15:22
   lastModifiedBy: Lucas
   isEditorPreview: 0
   isHeader: 0
@@ -4217,7 +4213,7 @@ MonoBehaviour:
     Controller: {fileID: 9006933588393802541}
     Group: {fileID: 2489987185365583116}
     FadeAlpha: {x: 0, y: 0.9}
-    GroupParameters: -1073741821
+    GroupParameters: -2147483645
     EnableSelectable: 0
     Selectable: {fileID: 0}
     ActiveSelectable: {fileID: 0}
