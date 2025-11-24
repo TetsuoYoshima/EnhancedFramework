@@ -14,7 +14,7 @@ namespace EnhancedFramework.Core {
     /// </summary>
     [ScriptGizmos(false, true)]
     [AddComponentMenu(FrameworkUtility.MenuPath + "Trigger/Unity Event Trigger"), DisallowMultipleComponent]
-    public class UnityEventTrigger : EnhancedTrigger {
+    public sealed class UnityEventTrigger : EnhancedTrigger {
         #region Global Members
         [Section("Unity Event Trigger"), PropertyOrder(0)]
 

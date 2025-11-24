@@ -43,8 +43,8 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         /// <param name="_name"><inheritdoc cref="Name" path="/summary"/></param>
         /// <param name="_description"><inheritdoc cref="Description" path="/summary"/></param>
         public DeveloperConsoleCommandParameter(string _name, string _description) {
-            Name = _name;
             Description = _description;
+            Name        = _name;
         }
         #endregion
 

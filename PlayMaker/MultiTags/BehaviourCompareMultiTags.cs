@@ -48,12 +48,12 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            Variable    = null;
-            Value       = null;
-            TrueEvent   = null;
-            FalseEvent  = null;
             StoreResult = null;
             EveryFrame  = false;
+            FalseEvent  = null;
+            TrueEvent   = null;
+            Variable    = null;
+            Value       = null;
         }
 
         public override void OnEnter() {
@@ -72,7 +72,9 @@ namespace EnhancedFramework.PlayMaker {
             CompareTags();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void CompareTags() {
             bool _hasTags = false;

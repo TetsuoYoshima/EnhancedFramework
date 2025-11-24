@@ -49,11 +49,11 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            AssetFeedbacks  = null;
-            SceneFeedbacks  = null;
-            Options         = FeedbackPlayOptions.None;
-            Transform       = null;
-            StopOnExit      = false;
+            AssetFeedbacks = null;
+            SceneFeedbacks = null;
+            StopOnExit     = false;
+            Transform      = null;
+            Options        = FeedbackPlayOptions.None;
         }
 
         public override void OnEnter() {
@@ -69,7 +69,9 @@ namespace EnhancedFramework.PlayMaker {
             Stop();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void Play() {
             GameObject _object   = Transform.Value;
@@ -78,15 +80,21 @@ namespace EnhancedFramework.PlayMaker {
             FeedbackPlayOptions _options = (FeedbackPlayOptions)Options.Value;
 
             // Assets.
-            for (int i = 0; i < AssetFeedbacks.Length; i++) {
-                if (AssetFeedbacks.Get(i) is EnhancedAssetFeedback _feedback) {
+            ref FsmArray _span = ref AssetFeedbacks;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                if (_span.Get(i) is EnhancedAssetFeedback _feedback) {
                     _feedback.PlaySafe(_transform, _options);
                 }
             }
 
             // Scene.
-            for (int i = 0; i < SceneFeedbacks.Length; i++) {
-                if (SceneFeedbacks.Get(i) is EnhancedSceneFeedback _feedback) {
+            _span = ref SceneFeedbacks;
+            _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                if (_span.Get(i) is EnhancedSceneFeedback _feedback) {
                     _feedback.PlaySafe(_transform, _options);
                 }
             }
@@ -98,15 +106,21 @@ namespace EnhancedFramework.PlayMaker {
             }
 
             // Assets.
-            for (int i = 0; i < AssetFeedbacks.Length; i++) {
-                if (AssetFeedbacks.Get(i) is EnhancedAssetFeedback _feedback) {
+            ref FsmArray _span = ref AssetFeedbacks;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                if (_span.Get(i) is EnhancedAssetFeedback _feedback) {
                     _feedback.StopSafe();
                 }
             }
 
             // Scene.
-            for (int i = 0; i < SceneFeedbacks.Length; i++) {
-                if (SceneFeedbacks.Get(i) is EnhancedSceneFeedback _feedback) {
+            _span = ref SceneFeedbacks;
+            _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                if (_span.Get(i) is EnhancedSceneFeedback _feedback) {
                     _feedback.StopSafe();
                 }
             }

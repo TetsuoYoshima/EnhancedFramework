@@ -11,6 +11,20 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace EnhancedFramework.Core {
+    // ===== Modifier ===== \\
+
+    /// <summary>
+    /// <see cref="ChronosModifier"/>-related callback interface.
+    /// </summary>
+    public interface IChronosModifierController {
+        #region Content
+        /// <summary>
+        /// Called whenever an associated <see cref="ChronosModifier"/> is stopped and removed.
+        /// </summary>
+        void OnStoppedChronos(ChronosModifier _chronos, ChronosModifier.Type _type);
+        #endregion
+    }
+
     /// <summary>
     /// <see cref="ChronosModifier"/>-related wrapper for a single chronos operation.
     /// </summary>
@@ -54,9 +68,9 @@ namespace EnhancedFramework.Core {
         /// <summary>
         /// Removes this handler associated chronos modifier.
         /// </summary>
-        public bool Remove(bool withCallback = true) {
+        public bool Remove(bool _withCallback = true) {
             if (GetHandle(out ChronosModifier _chronos)) {
-                _chronos.Remove(withCallback);
+                _chronos.Remove(_withCallback);
                 return true;
             }
 
@@ -76,22 +90,26 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public enum Type {
             None        = 0,
+
             Override    = 1,
             Coefficient = 2,
         }
         #endregion
 
         #region Global Members
-        private int id = 0;
+        private IChronosModifierController controller = null;
         private Type type = Type.None;
 
         private float chronos = 0f;
+        private int id = 0;
 
         // -----------------------
 
-        /// <inheritdoc cref="IHandle.ID"/>
-        public int ID {
-            get { return id; }
+        /// <summary>
+        /// The type of this chronos modifier.
+        /// </summary>
+        public Type ModifierType {
+            get { return type; }
         }
 
         /// <summary>
@@ -101,11 +119,9 @@ namespace EnhancedFramework.Core {
             get { return chronos; }
         }
 
-        /// <summary>
-        /// The type of this chronos modifier.
-        /// </summary>
-        public Type ModifierType {
-            get { return type; }
+        /// <inheritdoc cref="IHandle.ID"/>
+        public int ID {
+            get { return id; }
         }
 
         // -------------------------------------------
@@ -113,7 +129,7 @@ namespace EnhancedFramework.Core {
         // -------------------------------------------
 
         /// <inheritdoc cref="ChronosModifier(float)"/>
-        internal ChronosModifier() { }
+        internal ChronosModifier() : this(1f) { }
 
         /// <summary>
         /// Prevents from instanciating new instances without using the <see cref="ChronosManager"/> class.
@@ -130,12 +146,14 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Chronos
-        private Action onChronosComplete  = null;
         private Action onCompleteCallback = null;
+        private Action onChronosComplete  = null;
 
         private DelayHandler delay = default;
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         /// <inheritdoc cref="ApplyChronos(int, float, Type, float, bool, Action)"/>
         internal ChronosHandler ApplyChronos(int _id, float _chronos, Type _type) {
@@ -166,19 +184,17 @@ namespace EnhancedFramework.Core {
             onChronosComplete ??= () => Remove(true);
             onCompleteCallback  = _onComplete;
 
-            delay = Delayer.Call(_duration, onChronosComplete, _realTime);
+            if (_duration >= 0f) {
+                delay = Delayer.Call(_duration, onChronosComplete, _realTime);
+            }
 
             return _handler;
         }
 
-        // -------------------------------------------
-        // Behaviour
-        // -------------------------------------------
-
         /// <summary>
         /// Removes this chronos modifer from the game.
         /// </summary>
-        public void Remove(bool withCallback = true) {
+        public void Remove(bool _withCallback = true) {
 
             // Ignore if inactive.
             if (type == Type.None) {
@@ -191,13 +207,14 @@ namespace EnhancedFramework.Core {
             delay.Cancel();
             id = 0;
 
-            if (withCallback) {
+            if (_withCallback) {
                 onCompleteCallback?.Invoke();
             }
 
             onCompleteCallback = null;
 
-            ChronosManager.Instance.ReleaseChronos(this, _type);
+            controller.OnStoppedChronos(this, _type);
+            ChronosManager.Instance.ReleaseChronos(this);
         }
         #endregion
 
@@ -208,12 +225,19 @@ namespace EnhancedFramework.Core {
 
         void IPoolableObject.OnSentToPool() {
 
-            // Make sure the chronos is not active.
+            // Make sure that the chronos is no longer active.
             Remove(false);
         }
         #endregion
 
         #region Utility
+        /// <summary>
+        /// Sets this chronos controller callback receiver.
+        /// </summary>
+        internal void SetController(IChronosModifierController _controller) {
+            controller = _controller;
+        }
+
         /// <summary>
         /// Sets the type of this object.
         /// </summary>
@@ -225,13 +249,222 @@ namespace EnhancedFramework.Core {
     }
 
     /// <summary>
+    /// Wrapper class used to push and pop chronos overrides and coefficients, around the utilisation of <see cref="ChronosModifier"/>.
+    /// </summary>
+    internal sealed class ChronosWrapper {
+        #region Coefficient
+        private static readonly EnhancedCollection<ChronosModifier> coefficientBuffer = new EnhancedCollection<ChronosModifier>();
+
+        // -----------------------
+
+        /// <inheritdoc cref="PushCoefficient(int, float, IChronosModifierController, out ChronosHandler, float, bool, Action)"/>
+        public float PushCoefficient(int _id, float _chronosOverride, IChronosModifierController _controller, out ChronosHandler _handler) {
+            return PushCoefficient(_id, _chronosOverride, _controller, out _handler, -1f, false, null);
+        }
+
+        /// <summary>
+        /// Pushes a new chronos coefficient in buffer.
+        /// </summary>
+        /// <param name="_id">Id of this coefficient - use the same id to modify or "pop" its value.</param>
+        /// <param name="_chronosOverride">Chronos coefficient value.</param>
+        /// <param name="_duration">Duration of this coefficient (in seconds) - use a negative value for infinite duration.</param>
+        /// <param name="_realTime">If true, the given duration will not be affected by the game time scale.</param>
+        /// <param name="_onComplete">Delegate to be called once the coefficient is removed.</param>
+        /// <inheritdoc cref="ChronosModifier.ApplyChronos(int, float, ChronosModifier.Type, float, bool, Action)"/>
+        public float PushCoefficient(int _id, float _chronosOverride, IChronosModifierController _controller, out ChronosHandler _handler, float _duration, bool _realTime, Action _onComplete) {
+
+            ChronosModifier _modifier = GetCoefficient(_id, _controller);
+
+            if (_duration < 0f) {
+                _handler = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Coefficient);
+            } else {
+                _handler = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Coefficient, _duration, _realTime, _onComplete);
+            }
+
+            return RefreshCoefficient();
+        }
+
+        /// <summary>
+        /// Pops a previously pushed in buffer chronos coefficient.
+        /// </summary>
+        /// <param name="_id">Id of the coefficient to pop - same as used to "push" it.</param>
+        public void PopCoefficient(int _id, bool _withCallback = true) {
+            if (GetCoefficientModifier(_id, out ChronosModifier _chronos)) {
+                _chronos.Remove(_withCallback);
+            }
+        }
+
+        // -------------------------------------------
+        // Refresh
+        // -------------------------------------------
+
+        /// <summary>
+        /// Refreshes and get this object coefficient value.
+        /// </summary>
+        public float RefreshCoefficient() {
+
+            float _coef = ChronosManager.ChronosDefaultValue;
+            ref List<ChronosModifier> _span = ref coefficientBuffer.collection;
+
+            for (int i = _span.Count; i-- > 0;) {
+                _coef *= _span[i].Chronos;
+            }
+
+            return _coef;
+        }
+
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
+
+        private ChronosModifier GetCoefficient(int _id, IChronosModifierController _controller) {
+
+            if (!GetCoefficientModifier(_id, out ChronosModifier _modifier)) {
+
+                _modifier = ChronosManager.Instance.GetChronos(_controller);
+                coefficientBuffer.Add(_modifier);
+            }
+
+            return _modifier;
+        }
+
+        private bool GetCoefficientModifier(int _id, out ChronosModifier _modifier) {
+
+            ref List<ChronosModifier> _span = ref coefficientBuffer.collection;
+
+            for (int i = _span.Count; i-- > 0;) {
+                _modifier = _span[i];
+
+                if (_modifier.ID == _id) {
+                    return true;
+                }
+            }
+
+            _modifier = null;
+            return false;
+        }
+        #endregion
+
+        #region Override
+        private static readonly BufferR<ChronosModifier> overrideBuffer = new BufferR<ChronosModifier>(new ChronosModifier(1f));
+
+        // -----------------------
+
+        /// <inheritdoc cref="PushOverride(int, float, int, IChronosModifierController, out ChronosHandler, float, bool, Action)"/>
+        public float PushOverride(int _id, float _chronosOverride, int _priority, IChronosModifierController _controller, out ChronosHandler _handler) {
+            return PushOverride(_id, _chronosOverride, _priority, _controller, out _handler, -1f, false, null);
+        }
+
+        /// <summary>
+        /// Pushes a new chronos override in buffer.
+        /// <br/> The active override is always the last pushed in buffer with the highest priority.
+        /// </summary>
+        /// <param name="_id">Id of this override. Use the same id to modify or pop its value.</param>
+        /// <param name="_chronosOverride">Chronos override value.</param>
+        /// <param name="_priority">Priority of this override. Only the one with the highest value will be active.</param>
+        /// <param name="_duration">Duration of this override (in seconds).</param>
+        /// <param name="_realTime">If true, the given duration will not be affected by the game time scale.</param>
+        /// <param name="_onComplete">Delegate to be called once the override is removed.</param>
+        /// <inheritdoc cref="ChronosModifier.ApplyChronos(int, float, ChronosModifier.Type, float, bool, Action)"/>
+        public float PushOverride(int _id, float _chronosOverride, int _priority, IChronosModifierController _controller, out ChronosHandler _handler, float _duration, bool _realTime, Action _onComplete) {
+
+            ChronosModifier _modifier = GetOverride(_id, _controller);
+
+            if (_duration < 0f) {
+                _handler = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Override);
+            } else {
+                _handler = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Override, _duration, _realTime, _onComplete);
+            }
+
+            return overrideBuffer.Push(_modifier, _priority).Chronos;
+        }
+
+        /// <summary>
+        /// Pops a previously pushed in buffer chronos override.
+        /// </summary>
+        /// <param name="_id">Id of the override to pop.</param>
+        public void PopOverride(int _id, bool _withCallback = true) {
+            if (GetOverrideModifier(_id, out ChronosModifier _modifier)) {
+                _modifier.Remove(_withCallback);
+            }
+        }
+
+        // -------------------------------------------
+        // Refresh
+        // -------------------------------------------
+
+        /// <summary>
+        /// Refreshes and get this object override value.
+        /// </summary>
+        private float RefreshOverride() {
+            return overrideBuffer.Value.Chronos;
+        }
+
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
+
+        private ChronosModifier GetOverride(int _id, IChronosModifierController _controller) {
+
+            if (!GetOverrideModifier(_id, out ChronosModifier _modifier)) {
+                _modifier = ChronosManager.Instance.GetChronos(_controller);
+            }
+
+            return _modifier;
+        }
+
+        private bool GetOverrideModifier(int _id, out ChronosModifier _modifier) {
+
+            ref List<Pair<ChronosModifier, int>> _span = ref overrideBuffer.collection;
+
+            for (int i = _span.Count; i-- > 0;) {
+                _modifier = _span[i].First;
+
+                if (_modifier.ID == _id) {
+                    return true;
+                }
+            }
+
+            _modifier = null;
+            return false;
+        }
+        #endregion
+
+        #region General
+        public float OnStoppedChronos(ChronosModifier _chronos, ChronosModifier.Type _type) {
+
+            switch (_type) {
+
+                // Override.
+                case ChronosModifier.Type.Override:
+                    return overrideBuffer.Pop(_chronos).Chronos;
+
+                // Coefficient.
+                case ChronosModifier.Type.Coefficient:
+                    coefficientBuffer.Remove(_chronos);
+                    return RefreshCoefficient();
+
+                // Ignore.
+                case ChronosModifier.Type.None:
+                default:
+                    break;
+            }
+
+            return 1f;
+        }
+        #endregion
+    }
+
+    // ===== Manager ===== \\
+
+    /// <summary>
     /// Game global chronos manager singleton instance.
     /// <br/> Manages the whole time scale of the game, with numerous multiplicators and overrides.
     /// </summary>
     [ScriptGizmos(false, true)]
     [DefaultExecutionOrder(-990)]
     [AddComponentMenu(FrameworkUtility.MenuPath + "Chronos/Chronos Manager"), DisallowMultipleComponent]
-    public sealed class ChronosManager : EnhancedSingleton<ChronosManager>, IObjectPoolManager<ChronosModifier>, IGameStateLifetimeCallback {
+    public sealed class ChronosManager : EnhancedSingleton<ChronosManager>, IObjectPoolManager<ChronosModifier>, IChronosModifierController, IGameStateLifetimeCallback {
         public override UpdateRegistration UpdateRegistration => base.UpdateRegistration | UpdateRegistration.Init;
 
         #region Global Members
@@ -247,19 +480,16 @@ namespace EnhancedFramework.Core {
         [SerializeField] private bool usePauseInterface = false;
         [SerializeField, Enhanced, ShowIf(nameof(usePauseInterface)), Required] private FadingObjectBehaviour pauseInterface = null;
 
-        [Space(10f)]
+        [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
-        [SerializeField, Enhanced, ReadOnly, DisplayName("Chronos")] private float gameChronos = ChronosDefaultValue;
-        [SerializeField, Enhanced, ReadOnly] private float coefficient = ChronosDefaultValue;
+        [SerializeField, Enhanced, ReadOnly, DisplayName("Chronos Overr.")] private float chronosOverride    = ChronosDefaultValue;
+        [SerializeField, Enhanced, ReadOnly, DisplayName("Chronos Coef. ")] private float chronosCoefficient = ChronosDefaultValue;
 
         // -----------------------
 
-        /// <summary>
-        /// The game global chronos value (applied on <see cref="Time.timeScale"/>).
-        /// </summary>
-        public float GameChronos {
-            get { return gameChronos; }
-        }
+        private readonly ChronosWrapper chronosWrapper = new ChronosWrapper();
+
+        // -----------------------
 
         /// <summary>
         /// <see cref="GameState"/> type used when pausing the game chronos.
@@ -278,7 +508,7 @@ namespace EnhancedFramework.Core {
             base.OnBehaviourEnabled();
 
             // Override the default chronos behaviour to implement it as a coefficient.
-            ChronosStepper.OnSetChronos = ApplyEditorChronos;
+            ChronosStepper.OnSetChronos = ApplyChronosStepper;
         }
 
         protected override void OnInit() {
@@ -291,19 +521,90 @@ namespace EnhancedFramework.Core {
         protected override void OnBehaviourDisabled() {
             base.OnBehaviourDisabled();
 
-            ChronosStepper.OnSetChronos = (f) => Time.timeScale = f;
+            // Back to default behaviour.
+            ChronosStepper.OnSetChronos = (c) => Time.timeScale = c;
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Callback(s)
+        // -------------------------------------------
 
-        private void ApplyEditorChronos(float _chronos) {
+        private void ApplyChronosStepper(float _chronos) {
             PushCoefficient(editorChronosID, _chronos);
         }
         #endregion
 
-        #region Chronos Override
-        private static readonly BufferR<ChronosModifier> chronosBuffers = new BufferR<ChronosModifier>(new ChronosModifier(1f));
+        // ===== Chronos ===== \\
 
+        #region Coefficient
+        /// <inheritdoc cref="ChronosWrapper.PushCoefficient"/>
+        public ChronosHandler PushCoefficient(int _id, float _chronosOverride) {
+
+            float _coef = chronosWrapper.PushCoefficient(_id, _chronosOverride, this, out ChronosHandler _handler);
+            SetCoefficient(_coef);
+
+            return _handler;
+        }
+
+        /// <inheritdoc cref="ChronosWrapper.PushCoefficient"/>
+        public ChronosHandler PushCoefficient(int _id, float _chronosOverride, float _duration, bool _realTime = true, Action _onComplete = null) {
+
+            float _coef = chronosWrapper.PushCoefficient(_id, _chronosOverride, this, out ChronosHandler _handler, _duration, _realTime, _onComplete);
+            SetCoefficient(_coef);
+
+            return _handler;
+        }
+
+        /// <inheritdoc cref="ChronosWrapper.PopCoefficient"/>
+        public void PopCoefficient(int _id, bool _withCallback = true) {
+            chronosWrapper.PopCoefficient(_id, _withCallback);
+        }
+
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
+
+        private void SetCoefficient(float _coef) {
+            chronosCoefficient = _coef;
+            RefreshChronos();
+        }
+        #endregion
+
+        #region Override
+        /// <inheritdoc cref="ChronosWrapper.PushOverride"/>
+        public ChronosHandler PushOverride(int _id, float _chronosOverride, int _priority) {
+
+            float _override = chronosWrapper.PushOverride(_id, _chronosOverride, _priority, this, out ChronosHandler _handler);
+            SetOverride(_override);
+
+            return _handler;
+        }
+
+        /// <inheritdoc cref="ChronosWrapper.PushOverride"/>
+        public ChronosHandler PushOverride(int _id, float _chronosOverride, int _priority, float _duration, bool _realTime = true, Action _onComplete = null) {
+
+            float _override = chronosWrapper.PushOverride(_id, _chronosOverride, _priority, this, out ChronosHandler _handler, _duration, _realTime, _onComplete);
+            SetOverride(_override);
+
+            return _handler;
+        }
+
+        /// <inheritdoc cref="ChronosWrapper.PopOverride"/>
+        public void PopOverride(int _id, bool _withCallback = true) {
+            chronosWrapper.PopOverride(_id, _withCallback);
+        }
+
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
+
+        private void SetOverride(float _override) {
+            chronosOverride = _override;
+            RefreshChronos();
+        }
+        #endregion
+
+        #region General
         /// <summary>
         /// Called whenever the game time scale is changed.
         /// </summary>
@@ -311,171 +612,43 @@ namespace EnhancedFramework.Core {
 
         // -----------------------
 
-        /// <inheritdoc cref="PushOverride(int, float, int, float, bool, Action)"/>
-        public ChronosHandler PushOverride(int _id, float _chronosOverride, int _priority) {
+        /// <inheritdoc/>
+        void IChronosModifierController.OnStoppedChronos(ChronosModifier _chronos, ChronosModifier.Type _type) {
 
-            // Get modifier.
-            if (!GetModifier(_id, out ChronosModifier _modifier)) {
-                _modifier = GetChronos();
+            float _value = chronosWrapper.OnStoppedChronos(_chronos, _type);
+            switch (_type) {
+
+                // Override.
+                case ChronosModifier.Type.Override:
+                    SetOverride(_value);
+                    break;
+
+                // Coefficient.
+                case ChronosModifier.Type.Coefficient:
+                    SetCoefficient(_value);
+                    break;
+
+                // Ignore.
+                case ChronosModifier.Type.None:
+                default:
+                    break;
             }
-
-            ChronosHandler _handler = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Override);
-            return PushOverride(_priority, _modifier, _handler);
         }
 
         /// <summary>
-        /// Pushes a new chronos override in buffer.
-        /// <br/> The active override is always the last pushed in buffer with the highest priority.
+        /// Refreshes this object chronos.
         /// </summary>
-        /// <param name="_id">Id of this override. Use the same id to modify or pop its value.</param>
-        /// <param name="_chronosOverride">Chronos override value.</param>
-        /// <param name="_priority">Priority of this override. Only the one with the highest value will be active.</param>
-        /// <param name="_duration">Duration of this override (in seconds).</param>
-        /// <param name="_realTime">If true, the given duration will not be affected by the game time scale.</param>
-        /// <param name="_onComplete">Delegate to be called once the override is removed.</param>
-        /// <inheritdoc cref="ChronosModifier.ApplyChronos(int, float, ChronosModifier.Type, float, bool, Action)"/>
-        public ChronosHandler PushOverride(int _id, float _chronosOverride, int _priority, float _duration, bool _realTime = true, Action _onComplete = null) {
+        private void RefreshChronos() {
+            float _chronos = Mathf.Min(99f, chronosOverride * chronosCoefficient);
 
-            // Get modifier.
-            if (!GetModifier(_id, out ChronosModifier _modifier)) {
-                _modifier = GetChronos();
-            }
+            Chronos        = _chronos;
+            Time.timeScale = _chronos;
 
-            ChronosHandler _handler = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Override, _duration, _realTime, _onComplete);
-            return PushOverride(_priority, _modifier, _handler);
-        }
-
-        /// <summary>
-        /// Pops a previously pushed in buffer chronos override.
-        /// </summary>
-        /// <param name="_id">Id of the override to pop.</param>
-        public void PopOverride(int _id, bool withCallback = true) {
-            if (GetModifier(_id, out ChronosModifier _modifier)) {
-                _modifier.Remove(withCallback);
-            }
-        }
-
-        // -----------------------
-
-        private ChronosHandler PushOverride(int _priority, ChronosModifier _modifier, ChronosHandler _handler) {
-            float _chronos = chronosBuffers.Push(_modifier, _priority).Chronos;
-            RefreshChronos(_chronos);
-
-            return _handler;
-        }
-
-        private bool GetModifier(int _id, out ChronosModifier _modifier) {
-
-            List<Pair<ChronosModifier, int>> _chronosSpan = chronosBuffers.collection;
-            int _count = _chronosSpan.Count;
-
-            for (int i = 0; i < _count; i++) {
-                _modifier = _chronosSpan[i].First;
-
-                if (_modifier.ID == _id) {
-                    return true;
-                }
-            }
-
-            _modifier = null;
-            return false;
-        }
-
-        private void RefreshChronos(float _chronos) {
-            gameChronos = _chronos;
-            Time.timeScale = Mathf.Min(99f, _chronos * coefficient);
-
-            OnTimeScaleUpdate?.Invoke(Time.timeScale);
+            OnTimeScaleUpdate?.Invoke(_chronos);
         }
         #endregion
 
-        #region Coefficient
-        private static readonly EnhancedCollection<ChronosModifier> coefficientBuffer = new EnhancedCollection<ChronosModifier>();
-
-        // -----------------------
-
-        /// <inheritdoc cref="PushCoefficient(int, float, float, bool, Action)"/>
-        public ChronosHandler PushCoefficient(int _id, float _chronosOverride) {
-
-            ChronosModifier _modifier = GetModifier(_id);
-            ChronosHandler _handler   = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Coefficient);
-
-            UpdateCoefficient();
-            return _handler;
-        }
-
-        /// <summary>
-        /// Pushes a new chronos coefficient in buffer.
-        /// <br/> Coefficients are only applied when no global override is active.
-        /// </summary>
-        /// <param name="_id">Id of this coefficient. Use the same id to modify or pop its value.</param>
-        /// <param name="_chronosOverride">Chronos coefficient value.</param>
-        /// <param name="_duration">Duration of this coefficient (in seconds).</param>
-        /// <param name="_realTime">If true, the given duration will not be affected by the game time scale.</param>
-        /// <param name="_onComplete">Delegate to be called once the coefficient is removed.</param>
-        /// <inheritdoc cref="ChronosModifier.ApplyChronos(int, float, ChronosModifier.Type, float, bool, Action)"/>
-        public ChronosHandler PushCoefficient(int _id, float _chronosOverride, float _duration, bool _realTime = true, Action _onComplete = null) {
-
-            ChronosModifier _modifier = GetModifier(_id);
-            ChronosHandler _handler   = _modifier.ApplyChronos(_id, _chronosOverride, ChronosModifier.Type.Coefficient, _duration, _realTime, _onComplete);
-
-            UpdateCoefficient();
-            return _handler;
-        }
-
-        /// <summary>
-        /// Pops a previously pushed in buffer chronos coefficient.
-        /// </summary>
-        /// <param name="_id">Id of the coefficient to pop.</param>
-        public void PopCoefficient(int _id, bool withCallback = true) {
-            if (FindId(_id, out ChronosModifier _chronos)) {
-                _chronos.Remove(withCallback);
-            }
-        }
-
-        // -----------------------
-
-        private ChronosModifier GetModifier(int _id) {
-
-            // Get modifier.
-            if (!FindId(_id, out ChronosModifier _modifier)) {
-
-                _modifier = GetChronos();
-                coefficientBuffer.Add(_modifier);
-            }
-
-            return _modifier;
-        }
-
-        private bool FindId(int _id, out ChronosModifier _modifier) {
-
-            List<ChronosModifier> _chronosSpan = coefficientBuffer.collection;
-
-            for (int i = _chronosSpan.Count; i-- > 0;) {
-
-                _modifier = _chronosSpan[i];
-                if (_modifier.ID == _id) {
-                    return true;
-                }
-            }
-
-            _modifier = null;
-            return false;
-        }
-
-        private void UpdateCoefficient() {
-            float _coef = ChronosDefaultValue;
-
-            List<ChronosModifier> _chronosSpan = coefficientBuffer.collection;
-
-            for (int i = _chronosSpan.Count; i-- > 0;) {
-                _coef *= _chronosSpan[i].Chronos;
-            }
-
-            coefficient = _coef;
-            RefreshChronos(gameChronos);
-        }
-        #endregion
+        // ===== Miscs ===== \\
 
         #region Pause
         private GameState pauseState = null;
@@ -522,7 +695,7 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Pool
-        private readonly ObjectPool<ChronosModifier> pool = new ObjectPool<ChronosModifier>(3);
+        private static readonly ObjectPool<ChronosModifier> pool = new ObjectPool<ChronosModifier>(3);
 
         // -----------------------
 
@@ -530,35 +703,18 @@ namespace EnhancedFramework.Core {
         /// Get a <see cref="ChronosModifier"/> instance from the pool.
         /// </summary>
         /// <inheritdoc cref="ObjectPool{T}.GetPoolInstance"/>
-        private ChronosModifier GetChronos() {
-            return pool.GetPoolInstance();
+        internal ChronosModifier GetChronos(IChronosModifierController _controller) {
+            ChronosModifier _instance = pool.GetPoolInstance();
+            _instance.SetController(_controller);
+
+            return _instance;
         }
 
         /// <summary>
         /// Releases a specific <see cref="ChronosModifier"/> instance and sent it back to the pool.
         /// </summary>
         /// <inheritdoc cref="ObjectPool{T}.ReleasePoolInstance(T)"/>
-        internal bool ReleaseChronos(ChronosModifier _chronos, ChronosModifier.Type _type) {
-
-            switch (_type) {
-
-                // Override.
-                case ChronosModifier.Type.Override:
-                    Instance.RefreshChronos(chronosBuffers.Pop(_chronos).Chronos);
-                    break;
-
-                // Coefficient.
-                case ChronosModifier.Type.Coefficient:
-                    coefficientBuffer.Remove(_chronos);
-                    Instance.UpdateCoefficient();
-                    break;
-
-                // Ignore.
-                case ChronosModifier.Type.None:
-                default:
-                    break;
-            }
-
+        internal bool ReleaseChronos(ChronosModifier _chronos) {
             return pool.ReleasePoolInstance(_chronos);
         }
 
@@ -575,11 +731,11 @@ namespace EnhancedFramework.Core {
         // -------------------------------------------
 
         ChronosModifier IObjectPool<ChronosModifier>.GetPoolInstance() {
-            return GetChronos();
+            return GetChronos(this);
         }
 
         bool IObjectPool<ChronosModifier>.ReleasePoolInstance(ChronosModifier _instance) {
-            return ReleaseChronos(_instance, _instance.ModifierType);
+            return ReleaseChronos(_instance);
         }
 
         ChronosModifier IObjectPoolManager<ChronosModifier>.CreateInstance() {

@@ -18,11 +18,11 @@ namespace EnhancedFramework.UI {
     /// <see cref="FadingGroupEffect"/> playing a looping blink animation on a <see cref="CanvasGroup"/> while a source <see cref="FadingGroup"/> is visible.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Blink - Fading Group Effect")]
+    [AddComponentMenu(MenuPath + "Blink [Fading Group Effect]")]
     #pragma warning disable
     public sealed class BlinkFadingGroupEffect : FadingGroupEffect {
         #region Global Members
-        [Section("Blink Effect"), PropertyOrder(0)]
+        [Section("Blink [Fading Group Effect]"), PropertyOrder(0)]
 
         [Tooltip("Group to blink alpha value")]
         [SerializeField, Enhanced, Required] private CanvasGroup group = null;
@@ -52,10 +52,7 @@ namespace EnhancedFramework.UI {
         #region Enhanced Behaviour
         protected override void OnBehaviourDisabled() {
             base.OnBehaviourDisabled();
-
-            // Stop.
-            delay.Cancel();
-            tween.DoKill();
+            Stop();
         }
 
         #if UNITY_EDITOR
@@ -70,15 +67,15 @@ namespace EnhancedFramework.UI {
                 group = GetComponent<CanvasGroup>();
             }
         }
-#endif
+        #endif
         #endregion
 
         #region Effect
         private TweenCallback onKilledCallback = null;
         private Action stopAnimationCallback   = null;
 
-        private DelayHandler delay  = default;
-        private Tween tween = null;
+        private DelayHandler delay = default;
+        private Tween tween        = null;
 
         // -----------------------
 
@@ -127,6 +124,11 @@ namespace EnhancedFramework.UI {
 
                 group.alpha = 0f;
             }
+        }
+
+        private void Stop() {
+            delay.Cancel();
+            tween.DoKill();
         }
         #endregion
     }

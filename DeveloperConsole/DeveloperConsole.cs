@@ -162,8 +162,13 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         #region Global Members
         [Section("Developer Console")]
 
+        [SerializeField]
+        private SerializedType<IDeveloperConsoleState> gameStateType = new SerializedType<IDeveloperConsoleState>(SerializedTypeConstraint.None,
+                                                                                                                  typeof(DefaultDeveloperConsoleGameState));
+
         [Tooltip("Input action used to open/close the console")]
         [SerializeField, Enhanced, Required] public InputActionEnhancedAsset OpenConsoleInput = null;
+
 
         [Space(5f)]
 
@@ -2329,7 +2334,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
             {
                 AddBuiltInCommand(Command.Create<string>(
                     "loadscenebundle",
-                    "load_scenebundle",
+                    "load_scenebundle,loadbundle,load_bundle",
                     "Loads a SceneBundle by its name",
                     null,
                     s => {
@@ -2346,7 +2351,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
 
                 AddBuiltInCommand(Command.Create<string>(
                     "loadscenebundle_additively",
-                    "load_scenebundle_additively",
+                    "load_scenebundle_additively,loadbundle_additively,load_bundle_additively",
                     "Loads additively a SceneBundle by its name",
                     null,
                     s => {
@@ -2366,7 +2371,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
             {
                 AddBuiltInCommand(Command.Create<string>(
                     "unloadscenebundle",
-                    "unload_scenebundle",
+                    "unload_scenebundle,unloadbundle,unload_bundle",
                     "Unloads a SceneBundle by its name",
                     null,
                     s => {
@@ -3264,7 +3269,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         #endregion
 
         #region Activation
-        private static GameState gameState  = null;
+        private static GameState gameState = null;
 
         // -----------------------
 
@@ -3274,7 +3279,7 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         [Button(ActivationMode.Play, SuperColor.Green)]
         public static void Open() {
             if (!gameState.IsActive()) {
-                gameState = GameState.CreateState<DeveloperConsoleGameState>();
+                gameState = GameState.CreateState(Instance.gameStateType);
             }
         }
 

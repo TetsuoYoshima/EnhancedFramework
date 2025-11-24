@@ -7,9 +7,9 @@
 using EnhancedEditor;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 
 #if UNITY_EDITOR
+using UnityEditor;
 using UnityEditor.Animations;
 #endif
 
@@ -115,8 +115,8 @@ namespace EnhancedFramework.Core {
 
         // -----------------------
 
-        private int hash = 0;
         private int layerIndex = 0;
+        private int hash       = 0;
 
         // -----------------------
 
@@ -183,10 +183,12 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_layerIndex">Index of this state layer.</param>
         public void Initialize(int _layerIndex) {
-            hash = Animator.StringToHash(stateName);
             layerIndex = _layerIndex;
+            hash       = Animator.StringToHash(stateName);
         }
         #endregion
+
+        // --- Logic --- \\
 
         #region Animation
         /// <inheritdoc cref="Play(Animator, int, bool)"/>
@@ -202,9 +204,11 @@ namespace EnhancedFramework.Core {
         /// <param name="_instant">If true, instantly plays the animation.</param>
         public void Play(Animator _animator, int _layerIndex, bool _instant = false) {
 
+            int _hash = Hash;
+
             // Instant.
             if (_instant) {
-                _animator.Play(Hash, _layerIndex);
+                _animator.Play(_hash, _layerIndex);
                 return;
             }
 
@@ -212,7 +216,7 @@ namespace EnhancedFramework.Core {
             int _nextHash    = _animator.GetNextAnimatorStateInfo(_layerIndex).shortNameHash;
 
             // Cancel transition if state is already playing, and not in transition / transitioning to self.
-            if ((_currentHash == Hash) && ((_nextHash == 0) || (_nextHash == Hash))) {
+            if ((_currentHash == _hash) && ((_nextHash == 0) || (_nextHash == _hash))) {
                 return;
             }
 
@@ -223,12 +227,11 @@ namespace EnhancedFramework.Core {
 
             EnhancedAnimatorTransition GetTransition() {
 
-                List<EnhancedAnimatorStateTransition> _transitionsSpan = transitions.collection;
-                int _count = _transitionsSpan.Count;
+                ref List<EnhancedAnimatorStateTransition> _span = ref transitions.collection;
+                int _count = _span.Count;
 
                 for (int i = 0; i < _count; i++) {
-
-                    EnhancedAnimatorStateTransition _state = _transitionsSpan[i];
+                    EnhancedAnimatorStateTransition _state = _span[i];
 
                     if (_state.Contains(_currentHash, out EnhancedAnimatorTransition _transition) || _state.Contains(_nextHash, out _transition)) {
                         return _transition;
@@ -249,15 +252,18 @@ namespace EnhancedFramework.Core {
         /// <param name="_rotation">Root motion rotation velocity.</param>
         public void ApplyMotion(EnhancedAnimatorState _next, ref Vector3 _position, ref Quaternion _rotation) {
             // Position.
-            if (!HasPositionContraint(AxisConstraints.X)) {
+            AxisConstraints _nextConstraint = _next.motionPositionConstraints;
+            AxisConstraints _constraint     = motionPositionConstraints;
+
+            if (!HasPositionContraint(_constraint, _nextConstraint, AxisConstraints.X)) {
                 _position.x = 0f;
             }
 
-            if (!HasPositionContraint(AxisConstraints.Y)) {
+            if (!HasPositionContraint(_constraint, _nextConstraint, AxisConstraints.Y)) {
                 _position.y = 0f;
             }
 
-            if (!HasPositionContraint(AxisConstraints.Z)) {
+            if (!HasPositionContraint(_constraint, _nextConstraint, AxisConstraints.Z)) {
                 _position.z = 0f;
             }
 
@@ -267,24 +273,26 @@ namespace EnhancedFramework.Core {
 
             // Rotation.
             Vector3 _eulers = _rotation.eulerAngles;
+            _nextConstraint = _next.motionRotationConstraints;
+            _constraint     = motionRotationConstraints;
 
-            if (!HasRotationContraint(AxisConstraints.X)) {
+            if (!HasRotationContraint(_constraint, _nextConstraint, AxisConstraints.X)) {
                 _eulers.x = 0f;
             }
 
-            if (!HasRotationContraint(AxisConstraints.Y)) {
+            if (!HasRotationContraint(_constraint, _nextConstraint, AxisConstraints.Y)) {
                 _eulers.y = 0f;
             }
 
-            if (!HasRotationContraint(AxisConstraints.Z)) {
+            if (!HasRotationContraint(_constraint, _nextConstraint, AxisConstraints.Z)) {
                 _eulers.z = 0f;
             }
 
             _rotation = Quaternion.Euler(_eulers);
 
-            // ----- Local Method ----- \\
+            // ----- Local Methods ----- \\
 
-            Vector3 ApplyForwardConstraint(Vector3 _position, ForwardConstraint _constraint) {
+            static Vector3 ApplyForwardConstraint(Vector3 _position, ForwardConstraint _constraint) {
 
                 switch (_constraint) {
 
@@ -304,17 +312,19 @@ namespace EnhancedFramework.Core {
                 return _position;
             }
 
-            bool HasPositionContraint(AxisConstraints _constraint) {
-                return motionPositionConstraints.HasFlagUnsafe(_constraint) || _next.motionPositionConstraints.HasFlagUnsafe(_constraint);
+            static bool HasPositionContraint(AxisConstraints _this, AxisConstraints _next, AxisConstraints _constraint) {
+                return _this.HasFlagUnsafe(_constraint) || _next.HasFlagUnsafe(_constraint);
             }
 
-            bool HasRotationContraint(AxisConstraints _constraint) {
-                return motionRotationConstraints.HasFlagUnsafe(_constraint) || _next.motionRotationConstraints.HasFlagUnsafe(_constraint);
+            static bool HasRotationContraint(AxisConstraints _this, AxisConstraints _next, AxisConstraints _constraint) {
+                return _this.HasFlagUnsafe(_constraint) || _next.HasFlagUnsafe(_constraint);
             }
         }
         #endregion
 
-        #region Utility
+        // --- Utility --- \\
+
+        #region Editor
         #if UNITY_EDITOR
         /// <summary>
         /// Creates and setups this state in an <see cref="AnimatorController"/>, on a specific layer.

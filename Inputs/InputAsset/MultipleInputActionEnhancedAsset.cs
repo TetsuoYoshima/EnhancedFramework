@@ -25,8 +25,10 @@ namespace EnhancedFramework.Inputs {
 
         public override bool IsEnabled {
             get {
-                for (int i = 0; i < inputs.Length; i++) {
-                    if (!inputs[i].IsEnabled)
+
+                ref SingleInputActionEnhancedAsset[] _inputs = ref inputs;
+                for (int i = _inputs.Length; i-- > 0;) {
+                    if (!_inputs[i].IsEnabled)
                         return false;
                 }
 
@@ -49,8 +51,9 @@ namespace EnhancedFramework.Inputs {
         #region Initialization
         protected override void OnInit(InputDatabase _database) {
             // Event setup.
-            for (int i = 0; i < inputs.Length; i++) {
-                SingleInputActionEnhancedAsset _input = inputs[i];
+            ref SingleInputActionEnhancedAsset[] _inputs = ref inputs;
+            for (int i = _inputs.Length; i-- > 0;) {
+                SingleInputActionEnhancedAsset _input = _inputs[i];
 
                 _input.OnStarted   += (InputActionEnhancedAsset _) => CallOnStarted();
                 _input.OnCanceled  += (InputActionEnhancedAsset _) => CallOnCanceled();
@@ -71,8 +74,9 @@ namespace EnhancedFramework.Inputs {
         public override bool Performed() {
             bool _isPerformed = false;
 
-            for (int i = 0; i < inputs.Length; i++) {
-                SingleInputActionEnhancedAsset _input = inputs[i];
+            ref SingleInputActionEnhancedAsset[] _inputs = ref inputs;
+            for (int i = _inputs.Length; i-- > 0;) {
+                SingleInputActionEnhancedAsset _input = _inputs[i];
 
                 if (_input.Performed()) {
                     _isPerformed = true;
@@ -90,8 +94,9 @@ namespace EnhancedFramework.Inputs {
         public override bool Pressed() {
             bool _isPressed = false;
 
-            for (int i = 0; i < inputs.Length; i++) {
-                SingleInputActionEnhancedAsset _input = inputs[i];
+            ref SingleInputActionEnhancedAsset[] _inputs = ref inputs;
+            for (int i = _inputs.Length; i-- > 0;) {
+                SingleInputActionEnhancedAsset _input = _inputs[i];
 
                 if (_input.Pressed()) {
                     _isPressed = true;
@@ -107,8 +112,9 @@ namespace EnhancedFramework.Inputs {
         }
 
         public override bool Holding() {
-            for (int i = 0; i < inputs.Length; i++) {
-                if (!inputs[i].Holding())
+            ref SingleInputActionEnhancedAsset[] _inputs = ref inputs;
+            for (int i = _inputs.Length; i-- > 0;) {
+                if (!_inputs[i].Holding())
                     return false;
             }
 
@@ -135,14 +141,16 @@ namespace EnhancedFramework.Inputs {
 
         #region Utility
         public override void Enable() {
-            for (int i = 0; i < inputs.Length; i++) {
-                inputs[i].Enable();
+            ref SingleInputActionEnhancedAsset[] _inputs = ref inputs;
+            for (int i = _inputs.Length; i-- > 0;) {
+                _inputs[i].Enable();
             }
         }
 
         public override void Disable() {
-            for (int i = 0; i < inputs.Length; i++) {
-                inputs[i].Disable();
+            ref SingleInputActionEnhancedAsset[] _inputs = ref inputs;
+            for (int i = _inputs.Length; i-- > 0;) {
+                _inputs[i].Disable();
             }
         }
         #endregion

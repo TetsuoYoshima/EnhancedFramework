@@ -186,7 +186,6 @@ namespace EnhancedFramework.Core {
 
         protected override void OnBehaviourDisabled() {
             base.OnBehaviourDisabled();
-
             Stop();
         }
 
@@ -204,7 +203,7 @@ namespace EnhancedFramework.Core {
                 playableDirector.playOnAwake = false;
             }
         }
-#endif
+        #endif
         #endregion
 
         #region Player

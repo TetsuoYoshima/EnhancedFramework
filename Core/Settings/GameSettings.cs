@@ -41,7 +41,6 @@ namespace EnhancedFramework.Core.Settings {
 
         #region Callbacks
         void IPreprocessBuildWithReport.OnPreprocessBuild(BuildReport _report) {
-
             BuildTargetGroup _target = _report.summary.platformGroup;
             RegisterScriptingSymbols(_target);
         }
@@ -88,6 +87,8 @@ namespace EnhancedFramework.Core.Settings {
     }
     #endif
 
+    // ===== Settings ===== \\
+
     /// <summary>
     /// Global game settings, referencing each and every <see cref="BaseSettings{T}"/> shared across the game.
     /// </summary>
@@ -96,7 +97,7 @@ namespace EnhancedFramework.Core.Settings {
         #region Global Members
         [Section("Game Settings")]
 
-        [SerializeField] protected ScriptableSettings[] settings = new ScriptableSettings[0];
+        [SerializeField] private ScriptableSettings[] settings = new ScriptableSettings[0];
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
@@ -109,8 +110,11 @@ namespace EnhancedFramework.Core.Settings {
             base.Init();
 
             // Settings and databases assignement.
-            for (int i = 0; i < settings.Length; i++) {
-                ScriptableSettings _setting = settings[i];
+            ref ScriptableSettings[] _span = ref settings;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                ScriptableSettings _setting = _span[i];
 
                 #if DEVELOPMENT
                 if (_setting == null) {
@@ -185,9 +189,9 @@ namespace EnhancedFramework.Core.Settings {
             Array.Sort(settings, (a, b) => a.name.CompareTo(b.name));
             EditorUtility.SetDirty(this);
 
-            // ----- Local Method ----- \\
+            // ----- Local Methods ----- \\
 
-            Object LoadObject(Type _type) {
+            static Object LoadObject(Type _type) {
                 if (AssetDatabase.FindAssets($"t:{_type.Name}").SafeFirst(out string _guid)) {
                     return AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(_guid), _type);
                 }
@@ -195,7 +199,7 @@ namespace EnhancedFramework.Core.Settings {
                 return null;
             }
 
-            string GetProjectFolder() {
+            static string GetProjectFolder() {
 
                 foreach (Object _object in Selection.GetFiltered<Object>(SelectionMode.Assets)) {
                     string _path = AssetDatabase.GetAssetPath(_object);

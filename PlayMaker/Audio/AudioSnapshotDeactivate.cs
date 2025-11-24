@@ -35,7 +35,7 @@ namespace EnhancedFramework.PlayMaker {
             base.Reset();
 
             Snapshot = null;
-            Instant = false;
+            Instant  = false;
         }
 
         public override void OnEnter() {

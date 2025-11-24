@@ -134,6 +134,20 @@ namespace EnhancedFramework.Core {
             collection.Insert(_index, _element);
         }
 
+        /// <inheritdoc cref="ReplaceBy(IEnumerable{T})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual void ReplaceBy(EnhancedCollection<T> _collection) {
+            ReplaceBy(_collection.collection);
+        }
+
+        /// <summary>
+        /// Replace the content of this collection by another.
+        /// </summary>
+        /// <param name="_collection">The other collection to replace the content in this collection.</param>
+        public virtual void ReplaceBy(IList<T> _collection) {
+            collection.ReplaceBy(_collection);
+        }
+
         // -------------------------------------------
         // Remove
         // -------------------------------------------
@@ -211,9 +225,10 @@ namespace EnhancedFramework.Core {
         /// Removes all null entries from this collection.
         /// </summary>
         public void RemoveNull() {
+            ref List<T> _span = ref collection;
 
-            for (int i = Count; i-- > 0;) {
-                T _element = collection[i];
+            for (int i = _span.Count; i-- > 0;) {
+                T _element = _span[i];
 
                 if ((_element == null) || _element.Equals(null)) {
                     RemoveAt(i);
@@ -244,15 +259,16 @@ namespace EnhancedFramework.Core {
                 return;
             }
 
-            T _element = collection[_oldIndex];
+            ref List<T> _span = ref collection;
+            T _element = _span[_oldIndex];
 
-            collection.RemoveAt(_oldIndex);
+            _span.RemoveAt(_oldIndex);
 
             if (_newIndex > _oldIndex) {
                 _newIndex--;
             }
 
-            collection.Insert(_newIndex, _element);
+            _span.Insert(_newIndex, _element);
         }
 
         /// <param name="_element">Element of the array to move.</param>
@@ -279,27 +295,28 @@ namespace EnhancedFramework.Core {
                 return;
             }
 
-            T _element = collection[_index];
+            ref List<T> _span = ref collection;
+            T _element = _span[_index];
 
             if (_index < _shiftIndex) {
                 for (int i = _index; i < _shiftIndex; i++) {
-                    collection[i] = collection[i + 1];
+                    _span[i] = _span[i + 1];
                 }
             } else {
                 for (int i = _index; i-- > _shiftIndex;) {
-                    collection[i + 1] = collection[i];
+                    _span[i + 1] = _span[i];
                 }
             }
 
-            collection[_shiftIndex] = _element;
+            _span[_shiftIndex] = _element;
         }
 
         /// <inheritdoc cref="Fill(T, int, int)"/>
         public void Fill(T _value) {
+            ref List<T> _span = ref collection;
 
-            int _count = Count;
-            for (int i = 0; i < _count; i++) {
-                collection[i] = _value;
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i] = _value;
             }
         }
 
@@ -310,10 +327,11 @@ namespace EnhancedFramework.Core {
         /// <param name="_index">The index at which to start filling this collection.</param>
         /// <param name="_count">The total amount of elements from this collection to fill.</param>
         public void Fill(T _value, int _index, int _count) {
-            int _length = Math.Min(_index + _count, Count);
+            ref List<T> _span = ref collection;
+            int _length = Math.Min(_index + _count, _span.Count);
 
             for (int i = _index; i < _length; i++) {
-                collection[i] = _value;
+                _span[i] = _value;
             }
         }
         #endregion
@@ -365,6 +383,7 @@ namespace EnhancedFramework.Core {
         /// <param name="_match">Used to know if an element match.</param>
         /// <param name="_index">-1 if no matching element could be found, or the element index if found.</param>
         /// <returns>True if the element is contained in the collection, false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool FindIndex(Predicate<T> _match, out int _index) {
             _index = FindIndex(_match);
             return _index != -1;
@@ -375,6 +394,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_element">The element to check.</param>
         /// <returns>True if the element is contained in the collection, false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool Contains(T _element) {
             return IndexOf(_element) != -1;
         }
@@ -392,7 +412,6 @@ namespace EnhancedFramework.Core {
         /// Get the first element int this collection.</typeparam>
         /// </summary>
         /// <returns>The first element from this collection.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T First() {
             return collection[0];
         }
@@ -401,7 +420,6 @@ namespace EnhancedFramework.Core {
         /// Get the last element from this collection.
         /// </summary>
         /// <returns>The last element from this collection.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Last() {
             return collection[Count - 1];
         }
@@ -481,13 +499,11 @@ namespace EnhancedFramework.Core {
 
         /// <param name="_comparison">Comparison used to sort each element.</param>
         /// <inheritdoc cref="Sort(int, int, IComparer{T})"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Sort(Comparison<T> _comparison) {
             collection.Sort(_comparison);
         }
 
         /// <inheritdoc cref="Sort(int, int, IComparer{T})"/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Sort(IComparer<T> _comparer) {
             collection.Sort(_comparer);
         }
@@ -498,7 +514,6 @@ namespace EnhancedFramework.Core {
         /// <param name="_index">The index where to start sorting elements.</param>
         /// <param name="_count">The total count of elements to sort.</param>
         /// <param name="_comparer">Comparer used to sort each element.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Sort(int _index, int _count, IComparer<T> _comparer) {
             collection.Sort(_index, _count, _comparer);
         }
@@ -507,7 +522,6 @@ namespace EnhancedFramework.Core {
         /// Get this collection content as a new array.
         /// </summary>
         /// <returns>This collection content as an array.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T[] ToArray() {
             return collection.ToArray();
         }

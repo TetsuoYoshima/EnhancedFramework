@@ -17,6 +17,7 @@ namespace EnhancedFramework.Core {
     /// </summary>
     public enum AudioPlayerModifier {
         None    = 0,
+
         Asset   = 1,
         Fade    = 2,
 
@@ -122,6 +123,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public enum State {
             Inactive    = 0,
+
             Playing     = 1,
             Paused      = 2,
 
@@ -143,6 +145,7 @@ namespace EnhancedFramework.Core {
         #region Global Members
         [Section("Enhanced Audio Player")]
 
+        [Tooltip("Audio currently playing")]
         [SerializeField, Enhanced, Required] private AudioAsset audioAsset = null;
 
         [Space(5f)]
@@ -152,7 +155,10 @@ namespace EnhancedFramework.Core {
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
+        [Tooltip("Current state of this player")]
         [SerializeField, Enhanced, ReadOnly] private State state = State.Inactive;
+
+        [Tooltip("Unique identifier of this player")]
         [SerializeField, Enhanced, ReadOnly] private int playID = 0;
 
         [Space(10f)]
@@ -365,11 +371,11 @@ namespace EnhancedFramework.Core {
             AudioManager.UnregisterPlayer(this);
         }
 
+        #if UNITY_EDITOR
         // -------------------------------------------
         // Editor
         // -------------------------------------------
 
-        #if UNITY_EDITOR
         protected override void OnValidate() {
             base.OnValidate();
 
@@ -385,12 +391,15 @@ namespace EnhancedFramework.Core {
         #region Behaviour
         private static int lastPlayID = 0;
 
-        private Action onPlayCallback = null;
+        private Action<float> onFadeVolumeSetValue  = null;
+        private Action<bool> onFadeVolumeComplete   = null;
+        private Action onFadeVolumeCompleteCallback = null;
 
         private TweenHandler volumeTween = default;
-        private DelayHandler delay = default;
+        private DelayHandler delay       = default;
 
-        private bool isFadingOut = false;
+        private Action onPlayCallback = null;
+        private bool isFadingOut      = false;
 
         // -----------------------
 
@@ -435,7 +444,7 @@ namespace EnhancedFramework.Core {
             ClearPitchModifiers();
 
             PushVolumeModifier(AudioPlayerModifier.Asset, _audio.Volume);
-            PushPitchModifier(AudioPlayerModifier.Asset, _audio.Pitch);
+            PushPitchModifier (AudioPlayerModifier.Asset, _audio.Pitch);
 
             #if UNITY_EDITOR
             // Hierachy utility.
@@ -666,11 +675,19 @@ namespace EnhancedFramework.Core {
 
         private void FadeVolume(float _min, float _max, float _duration, AnimationCurve _curve, bool _fadeOut = false, Action _onComplete = null) {
 
+            // Delegates.
+            if (onFadeVolumeSetValue == null) {
+                onFadeVolumeSetValue = Set;
+                onFadeVolumeComplete = OnComplete;
+            }
+
             // Tween.
             StopFadeVolume(false);
 
+            onFadeVolumeCompleteCallback = _onComplete;
+
             isFadingOut = _fadeOut;
-            volumeTween = Tweener.Tween(_min, _max, Set, _duration, _curve, true, OnComplete);
+            volumeTween = Tweener.Tween(_min, _max, onFadeVolumeSetValue, _duration, _curve, true, onFadeVolumeComplete);
 
             // ----- Local Methods ----- \\
 
@@ -683,7 +700,7 @@ namespace EnhancedFramework.Core {
                 isFadingOut = false;
 
                 if (_completed) {
-                    _onComplete?.Invoke();
+                    onFadeVolumeCompleteCallback?.Invoke();
                 }
             }
         }
@@ -825,11 +842,11 @@ namespace EnhancedFramework.Core {
 
         private void UpdateVolume() {
 
-            List<Pair<AudioPlayerModifier, float>> _modifiersSpan = volumeModifiers.collection;
+            ref List<Pair<AudioPlayerModifier, float>> _span = ref volumeModifiers.collection;
             float _volume = DefaultVolume;
 
-            for (int i = _modifiersSpan.Count; i-- > 0;) {
-                _volume *= _modifiersSpan[i].Second;
+            for (int i = _span.Count; i-- > 0;) {
+                _volume *= _span[i].Second;
             }
 
             audioSource.volume = _volume;
@@ -837,11 +854,11 @@ namespace EnhancedFramework.Core {
 
         private void UpdatePitch() {
 
-            List<Pair<AudioPlayerModifier, float>> _modifiersSpan = pitchModifiers.collection;
+            ref List<Pair<AudioPlayerModifier, float>> _span = ref pitchModifiers.collection;
             float _pitch = DefaultPitch;
 
-            for (int i = _modifiersSpan.Count; i-- > 0;) {
-                _pitch *= _modifiersSpan[i].Second;
+            for (int i = _span.Count; i-- > 0;) {
+                _pitch *= _span[i].Second;
             }
 
             audioSource.pitch = _pitch;
@@ -884,10 +901,10 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public void ClearVolumeModifiers() {
 
-            List<Pair<AudioPlayerModifier, TweenHandler>> _tweenSpan = volumeTweens.collection;
+            ref List<Pair<AudioPlayerModifier, TweenHandler>> _span = ref volumeTweens.collection;
 
-            for (int i = _tweenSpan.Count; i-- > 0;) {
-                _tweenSpan[i].Second.Stop();
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].Second.Stop();
             }
 
             volumeTweens.Clear();
@@ -901,10 +918,10 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public void ClearPitchModifiers() {
 
-            List<Pair<AudioPlayerModifier, TweenHandler>> _tweenSpan = pitchTweens.collection;
+            ref List<Pair<AudioPlayerModifier, TweenHandler>> _span = ref pitchTweens.collection;
             
-            for (int i = _tweenSpan.Count; i-- > 0;) {
-                _tweenSpan[i].Second.Stop();
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].Second.Stop();
             }
 
             pitchTweens.Clear();
@@ -919,8 +936,10 @@ namespace EnhancedFramework.Core {
             base.OnCreated(_pool);
 
             // Component reference.
-            audioSource = gameObject.AddComponentIfNone<AudioSource>();
-            audioSource.playOnAwake = false;
+            AudioSource _audioSource = gameObject.AddComponentIfNone<AudioSource>();
+            _audioSource.playOnAwake = false;
+
+            audioSource = _audioSource;
         }
 
         public override void OnRemovedFromPool() {
@@ -972,8 +991,8 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_transform"><see cref="Transform"/> reference to follow.</param>
         public void FollowTransform(Transform _transform) {
-            followTransform = true;
             referenceTransform = _transform;
+            followTransform    = true;
 
             UpdateFollow();
         }
@@ -982,8 +1001,8 @@ namespace EnhancedFramework.Core {
         /// Stops following any reference <see cref="Transform"/>.
         /// </summary>
         public void StopFollowTransform() {
-            followTransform = false;
             referenceTransform = null;
+            followTransform    = false;
         }
 
         /// <summary>

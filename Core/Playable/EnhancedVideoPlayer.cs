@@ -183,7 +183,8 @@ namespace EnhancedFramework.Core {
         public Vector2 SkipInterval {
             get { return skipInterval; }
             set {
-                skipInterval = new Vector2(Mathf.Clamp(value.x, playRange.x, playRange.y), Mathf.Clamp(value.y, playRange.x, playRange.y));
+                Vector2 _range = playRange;
+                skipInterval = new Vector2(Mathf.Clamp(value.x, _range.x, _range.y), Mathf.Clamp(value.y, _range.x, _range.y));
             }
         }
 
@@ -288,6 +289,7 @@ namespace EnhancedFramework.Core {
 
             // Play once loading is over.
             if (playAfterLoading) {
+
                 playAfterLoading = false;
                 PlayFromStart();
             }
@@ -305,11 +307,11 @@ namespace EnhancedFramework.Core {
             }
         }
 
+        #if UNITY_EDITOR
         // -------------------------------------------
         // Editor
         // -------------------------------------------
 
-        #if UNITY_EDITOR
         protected override void OnValidate() {
             base.OnValidate();
 
@@ -324,7 +326,7 @@ namespace EnhancedFramework.Core {
                 playRange = TimeRange;
             }
         }
-#endif
+        #endif
         #endregion
 
         #region Player
@@ -524,6 +526,11 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Utility
+        private VideoPlayer.EventHandler onPrepareCompletedCallback = null;
+        private Action onPreparedCallback = null;
+
+        // -----------------------
+
         /// <summary>
         /// Plays this <see cref="VideoPlayer"/> from the start.
         /// </summary>
@@ -545,8 +552,12 @@ namespace EnhancedFramework.Core {
             }
 
             if (_onPrepared != null) {
-                videoPlayer.prepareCompleted -= OnPrepared;
-                videoPlayer.prepareCompleted += OnPrepared;
+
+                onPreparedCallback = _onPrepared;
+                onPrepareCompletedCallback ??= OnPrepared;
+
+                videoPlayer.prepareCompleted -= onPrepareCompletedCallback;
+                videoPlayer.prepareCompleted += onPrepareCompletedCallback;
             }
 
             videoPlayer.Prepare();
@@ -554,8 +565,8 @@ namespace EnhancedFramework.Core {
             // ----- Local Method ----- \\
 
             void OnPrepared(VideoPlayer _player){
-                videoPlayer.prepareCompleted -= OnPrepared;
-                _onPrepared.Invoke();
+                videoPlayer.prepareCompleted -= onPrepareCompletedCallback;
+                onPreparedCallback.Invoke();
             }
         }
 

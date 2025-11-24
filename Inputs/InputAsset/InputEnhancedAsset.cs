@@ -21,6 +21,7 @@ namespace EnhancedFramework.Inputs {
         
         [Section("Input Asset")]
 
+        [Tooltip("If true, automatically enables this input asset upon game initialization")]
         [SerializeField] private bool enableOnInit = false;
 
         // -----------------------

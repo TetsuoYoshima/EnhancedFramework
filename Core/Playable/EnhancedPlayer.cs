@@ -10,7 +10,7 @@ namespace EnhancedFramework.Core {
     /// <summary>
     /// Base interface for any special player.
     /// </summary>
-    public interface IPlayer {
+    public interface IEnhancedPlayer {
         #region Content
         /// <summary>
         /// Plays or resumes this player content.
@@ -30,19 +30,19 @@ namespace EnhancedFramework.Core {
     }
 
     /// <summary>
-    /// Base <see cref="EnhancedBehaviour"/> for an <see cref="IPlayer"/>.
+    /// Base <see cref="EnhancedBehaviour"/> for an <see cref="IEnhancedPlayer"/>.
     /// </summary>
-    public abstract class EnhancedPlayer : EnhancedBehaviour, IPlayer {
+    public abstract class EnhancedPlayer : EnhancedBehaviour, IEnhancedPlayer {
         #region Player
-        /// <inheritdoc cref="IPlayer.Play"/>
+        /// <inheritdoc cref="IEnhancedPlayer.Play"/>
         [Button(SuperColor.Green)]
         public abstract void Play();
 
-        /// <inheritdoc cref="IPlayer.Pause"/>
+        /// <inheritdoc cref="IEnhancedPlayer.Pause"/>
         [Button(SuperColor.Orange)]
         public abstract void Pause();
 
-        /// <inheritdoc cref="IPlayer.Stop"/>
+        /// <inheritdoc cref="IEnhancedPlayer.Stop"/>
         [Button(SuperColor.Crimson)]
         public abstract void Stop();
         #endregion

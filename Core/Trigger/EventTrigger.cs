@@ -15,6 +15,8 @@ namespace EnhancedFramework.Core {
         [Tooltip("Disable this trigger")]
         None    = 0,
 
+        [Separator(SeparatorPosition.Top)]
+
         [Tooltip("Play this event on trigger enter")]
         OnEnter = 1,
 

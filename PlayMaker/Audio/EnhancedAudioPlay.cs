@@ -56,12 +56,12 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            Audio = null;
-            Settings = null;
             OverrideSettings = false;
-            Options = FeedbackPlayOptions.None;
-            Transform = null;
-            StopOnExit = false;
+            StopOnExit       = false;
+            Transform        = null;
+            Settings         = null;
+            Options          = FeedbackPlayOptions.None;
+            Audio            = null;
         }
 
         public override void OnEnter() {

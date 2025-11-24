@@ -35,7 +35,7 @@ namespace EnhancedFramework.PlayMaker {
             base.Reset();
 
             FlagVariable = null;
-            FlagValue = null;
+            FlagValue    = null;
         }
 
         public override void OnEnter() {
@@ -45,7 +45,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void SetFlagValue() {
             if (FlagVariable.Value is FlagBehaviour _behaviour) {

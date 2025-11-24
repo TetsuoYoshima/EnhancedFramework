@@ -42,9 +42,9 @@ namespace EnhancedFramework.PlayMaker {
             base.Reset();
 
             FlagVariable = null;
-            TrueEvent    = null;
             FalseEvent   = null;
             StoreValue   = null;
+            TrueEvent    = null;
         }
 
         public override void OnEnter() {
@@ -54,7 +54,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void GetFlagValue() {
             bool _flag = false;

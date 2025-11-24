@@ -41,10 +41,10 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            FlagGroup  = null;
-            TrueEvent  = null;
             FalseEvent = null;
             StoreValue = null;
+            TrueEvent  = null;
+            FlagGroup  = null;
         }
 
         public override void OnEnter() {
@@ -54,7 +54,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void GetValidity() {
             bool _isValid = false;

@@ -6,6 +6,7 @@
 
 using EnhancedEditor;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 using Range = EnhancedEditor.RangeAttribute;
@@ -15,19 +16,15 @@ namespace EnhancedFramework.Core {
     /// Various options used to play an <see cref="IEnhancedFeedback"/>.
     /// </summary>
     public enum FeedbackPlayOptions {
-        /// <summary>
-        /// Plays the feedback with no option.
-        /// </summary>
+        [Tooltip("Plays the feedback with no option")]
         None = 0,
 
-        /// <summary>
-        /// Plays the feedback at a specific position.
-        /// </summary>
+        [Separator(SeparatorPosition.Top)]
+
+        [Tooltip("Plays the feedback at a specific position")]
         PlayAtPosition = 1,
 
-        /// <summary>
-        /// Plays the feedback and parent it to a specific Transform.
-        /// </summary>
+        [Tooltip("Plays the feedback and parent it to a specific Transform")]
         FollowTransform = 2,
     }
 
@@ -74,7 +71,7 @@ namespace EnhancedFramework.Core {
         void ISerializationCallbackReceiver.OnBeforeSerialize() { }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize() {
-            RemoveNullReferences();
+            //RemoveNullReferences();
         }
 
         // -----------------------
@@ -93,51 +90,101 @@ namespace EnhancedFramework.Core {
         #region Enhanced Feedback
         /// <inheritdoc cref="IEnhancedFeedback.Play(Transform, FeedbackPlayOptions)"/>
         public void Play(Transform _transform, FeedbackPlayOptions _options = FeedbackPlayOptions.PlayAtPosition) {
-            for (int i = 0; i < assetFeedbacks.Length; i++) {
-                assetFeedbacks[i].Play(_transform, _options);
+
+            ref EnhancedAssetFeedback[] _assetSpan = ref assetFeedbacks;
+            int _count = _assetSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _assetSpan[i].Play(_transform, _options);
             }
 
-            for (int i = 0; i < sceneFeedbacks.Length; i++) {
-                sceneFeedbacks[i].Play(_transform, _options);
+            ref EnhancedSceneFeedback[] _sceneSpan = ref sceneFeedbacks;
+            _count = _sceneSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _sceneSpan[i].Play(_transform, _options);
             }
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Play(Vector3)"/>
         public void Play(Vector3 _position) {
-            for (int i = 0; i < assetFeedbacks.Length; i++) {
-                assetFeedbacks[i].Play(_position);
+
+            ref EnhancedAssetFeedback[] _assetSpan = ref assetFeedbacks;
+            int _count = _assetSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _assetSpan[i].Play(_position);
             }
 
-            for (int i = 0; i < sceneFeedbacks.Length; i++) {
-                sceneFeedbacks[i].Play(_position);
+            ref EnhancedSceneFeedback[] _sceneSpan = ref sceneFeedbacks;
+            _count = _sceneSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _sceneSpan[i].Play(_position);
             }
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Play"/>
         public void Play() {
-            for (int i = 0; i < assetFeedbacks.Length; i++) {
-                assetFeedbacks[i].Play();
+
+            ref EnhancedAssetFeedback[] _assetSpan = ref assetFeedbacks;
+            int _count = _assetSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _assetSpan[i].Play();
             }
 
-            for (int i = 0; i < sceneFeedbacks.Length; i++) {
-                sceneFeedbacks[i].Play();
+            ref EnhancedSceneFeedback[] _sceneSpan = ref sceneFeedbacks;
+            _count = _sceneSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _sceneSpan[i].Play();
             }
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Stop"/>
         public void Stop() {
-            for (int i = 0; i < assetFeedbacks.Length; i++) {
-                assetFeedbacks[i].Stop();
+
+            ref EnhancedAssetFeedback[] _assetSpan = ref assetFeedbacks;
+            int _count = _assetSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _assetSpan[i].Stop();
             }
 
-            for (int i = 0; i < sceneFeedbacks.Length; i++) {
-                sceneFeedbacks[i].Stop();
+            ref EnhancedSceneFeedback[] _sceneSpan = ref sceneFeedbacks;
+            _count = _sceneSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _sceneSpan[i].Stop();
             }
         }
         #endregion
     }
 
     // ===== Core ===== \\
+
+    /// <summary>
+    /// <see cref="EnhancedAssetFeedback"/> & <see cref="EnhancedSceneFeedback"/> related play operation data wrapper.
+    /// </summary>
+    internal struct EnhancedFeedbackPlayData {
+        #region Global Members
+        public FeedbackPlayOptions Options;
+        public Transform Transform;
+        public Vector3 Position;
+
+        // -------------------------------------------
+        // Constructor(s)
+        // -------------------------------------------
+
+        /// <inheritdoc cref="EnhancedFeedbackPlayData"/>
+        public EnhancedFeedbackPlayData(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
+            Options   = _options;
+            Transform = _transform;
+            Position  = _position;
+        }
+        #endregion
+    }
 
     /// <summary>
     /// Base class for any <see cref="EnhancedScriptableObject"/> enhanced feedback.
@@ -158,7 +205,9 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Enhanced Feedback
+        private readonly List<EnhancedFeedbackPlayData> delayedPlayData = new List<EnhancedFeedbackPlayData>();
         private DelayHandler delayHandler = default;
+        private Action       onPlayDelay  = null;
 
         // -------------------------------------------
         // Core
@@ -168,23 +217,26 @@ namespace EnhancedFramework.Core {
         [Button(ActivationMode.Play, SuperColor.Green)]
         public void Play(Transform _transform, FeedbackPlayOptions _options = FeedbackPlayOptions.PlayAtPosition) {
             Vector3 _position = (_options == FeedbackPlayOptions.PlayAtPosition) ? _transform.position : Vector3.zero;
-            DoPlay(_transform, _position, _options);
+            DoPlay(_options, _transform, _position);
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Play(Vector3)"/>
         public void Play(Vector3 _position) {
-            DoPlay(null, _position, FeedbackPlayOptions.PlayAtPosition);
+            DoPlay(FeedbackPlayOptions.PlayAtPosition, null, _position);
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Play"/>
         public void Play() {
-            DoPlay(null, Vector3.zero, FeedbackPlayOptions.None);
+            DoPlay(FeedbackPlayOptions.None, null, Vector3.zero);
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Stop"/>
         [Button(ActivationMode.Play, SuperColor.Crimson)]
         public virtual void Stop() {
-            delayHandler.Cancel();
+            if (delayHandler.Cancel()) {
+                delayedPlayData.RemoveLast();
+            }
+
             OnStop();
         }
 
@@ -192,17 +244,29 @@ namespace EnhancedFramework.Core {
         // Internal
         // -------------------------------------------
 
-        protected virtual void DoPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
-            if (Delay != 0f) {
-                delayHandler = Delayer.Call(Delay, DoPlay, useRealTime);
+        protected virtual void DoPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
+
+            float _delay = Delay;
+            if (_delay != 0f) {
+
+                delayedPlayData.Add(new EnhancedFeedbackPlayData(_options, _transform, _position));
+
+                onPlayDelay ??= DoPlayDelay;
+                delayHandler  = Delayer.Call(_delay, onPlayDelay, useRealTime);
+
             } else {
-                DoPlay();
+                OnPlay(_options, _transform, _position);
             }
 
             // ----- Local Method ----- \\
 
-            void DoPlay() {
-                OnPlay(_transform, _position, _options);
+            void DoPlayDelay() {
+                if (!delayedPlayData.SafeFirst(out EnhancedFeedbackPlayData _data)) {
+                    return;
+                }
+
+                delayedPlayData.RemoveFirst();
+                OnPlay(_data.Options, _data.Transform, _data.Position);
             }
         }
         #endregion
@@ -212,8 +276,8 @@ namespace EnhancedFramework.Core {
         /// Called when starting to play this feedback.
         /// <br/> Implements this feedback behaviour here.
         /// </summary>
-        /// <inheritdoc cref="IEnhancedFeedback.Play(Transform, FeedbackPlayOptions)"/>
-        protected abstract void OnPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options);
+        /// <inheritdoc cref="IEnhancedFeedback.Play(FeedbackPlayOptions, Transform)"/>
+        protected abstract void OnPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position);
 
         /// <summary>
         /// Called when stopping to play this feedback.
@@ -239,7 +303,9 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Enhanced Feedback
+        private readonly List<EnhancedFeedbackPlayData> delayedPlayData = new List<EnhancedFeedbackPlayData>();
         private DelayHandler delayHandler = default;
+        private Action       onPlayDelay  = null;
 
         // -------------------------------------------
         // Core
@@ -249,23 +315,26 @@ namespace EnhancedFramework.Core {
         [Button(ActivationMode.Play, SuperColor.Green)]
         public void Play(Transform _transform, FeedbackPlayOptions _options = FeedbackPlayOptions.PlayAtPosition) {
             Vector3 _position = (_options == FeedbackPlayOptions.PlayAtPosition) ? _transform.position : Vector3.zero;
-            DoPlay(_transform, _position, _options);
+            DoPlay(_options, _transform, _position);
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Play(Vector3)"/>
         public void Play(Vector3 _position) {
-            DoPlay(null, _position, FeedbackPlayOptions.PlayAtPosition);
+            DoPlay(FeedbackPlayOptions.PlayAtPosition, null, _position);
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Play"/>
         public void Play() {
-            DoPlay(null, Vector3.zero, FeedbackPlayOptions.None);
+            DoPlay(FeedbackPlayOptions.None, null, Vector3.zero);
         }
 
         /// <inheritdoc cref="IEnhancedFeedback.Stop"/>
         [Button(ActivationMode.Play, SuperColor.Crimson)]
         public virtual void Stop() {
-            delayHandler.Cancel();
+            if (delayHandler.Cancel()) {
+                delayedPlayData.RemoveLast();
+            }
+
             OnStopFeedback();
         }
 
@@ -273,17 +342,29 @@ namespace EnhancedFramework.Core {
         // Internal
         // -------------------------------------------
 
-        protected virtual void DoPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
-            if (Delay != 0f) {
-                delayHandler = Delayer.Call(Delay, DoPlay, useRealTime);
+        protected virtual void DoPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
+
+            float _delay = Delay;
+            if (_delay != 0f) {
+
+                delayedPlayData.Add(new EnhancedFeedbackPlayData(_options, _transform, _position));
+
+                onPlayDelay ??= DoPlayDelay;
+                delayHandler  = Delayer.Call(_delay, onPlayDelay, useRealTime);
+
             } else {
-                DoPlay();
+                OnPlayFeedback(_options, _transform, _position);
             }
 
             // ----- Local Method ----- \\
 
-            void DoPlay() {
-                OnPlayFeedback(_transform, _position, _options);
+            void DoPlayDelay() {
+                if (!delayedPlayData.SafeFirst(out EnhancedFeedbackPlayData _data)) {
+                    return;
+                }
+
+                delayedPlayData.RemoveFirst();
+                OnPlayFeedback(_data.Options, _data.Transform, _data.Position);
             }
         }
         #endregion
@@ -294,7 +375,7 @@ namespace EnhancedFramework.Core {
         /// <br/> Implements this feedback behaviour here.
         /// </summary>
         /// <inheritdoc cref="IEnhancedFeedback.Play(Transform, FeedbackPlayOptions)"/>
-        protected abstract void OnPlayFeedback(Transform _transform, Vector3 _position, FeedbackPlayOptions _options);
+        protected abstract void OnPlayFeedback(FeedbackPlayOptions _options, Transform _transform, Vector3 _position);
 
         /// <summary>
         /// Called when stopping to play this feedback.

@@ -306,7 +306,6 @@ namespace EnhancedFramework.UI {
 
         #region Display
         public override void RefreshOption() {
-
             RefreshText();
             RefreshGameObjects();
         }
@@ -349,13 +348,16 @@ namespace EnhancedFramework.UI {
             }
 
             // Activate game objects.
-            for (int i = 0; i < gameObjects.Length; i++) {
+            ref GameObject[] _span = ref gameObjects;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
 
                 bool _active = HasFlag(Parameters.SingleActiveObject)
                              ? (i == SelectedOptionIndex)
                              : (HasFlag(Parameters.MutlipleActiveObjects) ? (i <= SelectedOptionIndex) : false);
 
-                gameObjects[i].SetActive(_active == activateGameObject);
+                _span[i].SetActive(_active == activateGameObject);
             }
         }
         #endregion

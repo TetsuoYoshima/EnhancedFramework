@@ -18,12 +18,18 @@ namespace EnhancedFramework.Editor {
     [InitializeOnLoad]
     internal static class EditorSceneResourceManager {
         #region Content
+        // -------------------------------------------
+        // Constructor(s)
+        // -------------------------------------------
+
         static EditorSceneResourceManager() {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorSceneManager.sceneSaving         += OnSavingScene;
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Callback(s)
+        // -------------------------------------------
 
         private static void OnSavingScene(Scene _scene, string _path) {
             SceneResourceManager[] _instances = Object.FindObjectsOfType<SceneResourceManager>();

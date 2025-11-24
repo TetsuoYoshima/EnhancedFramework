@@ -35,15 +35,21 @@ namespace EnhancedFramework.Core {
         // Constructor(s)
         // -------------------------------------------
 
-        /// <inheritdoc cref="AssetMaterialGroup(T, Material[])"/>
+        /// <inheritdoc cref="AssetMaterialGroup(T, IList{Material})"/>
         public AssetMaterialGroup() {
             Materials = new BlockList<Material>(true, true, false);
+        }
+
+        /// <inheritdoc cref="AssetMaterialGroup(T, IList{Material})"/>
+        public AssetMaterialGroup(T _asset, Material _material) : this() {
+            Asset = _asset;
+            Materials.List.Add(_material);
         }
 
         /// <param name="_asset">Asset wrapped in this group.</param>
         /// <param name="_materials">All materials associated with this asset.</param>
         /// <inheritdoc cref="AssetMaterialDatabase{T}"/>
-        public AssetMaterialGroup(T _asset, params Material[] _materials) : this() {
+        public AssetMaterialGroup(T _asset, IList<Material> _materials) : this() {
             Asset = _asset;
             Materials.List.AddRange(_materials);
         }
@@ -75,8 +81,10 @@ namespace EnhancedFramework.Core {
         /// <param name="_material"><see cref="UnityEngine.Material"/> to register.</param>
         public void RegisterMaterial(Material _material) {
 
-            if (!Materials.List.Contains(_material)) {
-                Materials.Add(_material);
+            ref List<Material> _span = ref Materials.List;
+
+            if (!_span.Contains(_material)) {
+                _span.Add(_material);
             }
         }
 
@@ -87,13 +95,13 @@ namespace EnhancedFramework.Core {
         /// <returns>True if the material could be successfully unregistered, false otherwise.</returns>
         public bool UnregisterMaterial(Material _material) {
 
-            List<Material> _materialsSpan = Materials.List;
-            int _count = _materialsSpan.Count;
+            ref List<Material> _span = ref Materials.List;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
+                if (_span[i] == _material) {
 
-                if (_materialsSpan[i] == _material) {
-                    _materialsSpan.RemoveAt(i);
+                    _span.RemoveAt(i);
                     return true;
                 }
             }
@@ -102,6 +110,8 @@ namespace EnhancedFramework.Core {
         }
         #endregion
     }
+
+    // ===== Asset Database ===== \\
 
     /// <summary>
     /// Base class for a <see cref="Material"/>-related asset database.
@@ -113,12 +123,12 @@ namespace EnhancedFramework.Core {
         public const string MenuPath    = FrameworkUtility.MenuPath + "Asset Material Database/";
         public const int MenuOrder      = FrameworkUtility.MenuOrder;
 
-        [Section("Asset Material Database")]
+        [Section("Asset Material Database"), PropertyOrder(0)]
 
         [Tooltip("Default asset of this database; returned when no asset is registered for a material")]
         [SerializeField, Enhanced, Required] protected T DefaultAsset = null;
 
-        [Space(10f)]
+        [Space(10f), PropertyOrder(10)]
 
         [Tooltip("All material groups in this database")]
         [SerializeField] protected AssetMaterialGroup<T>[] groups = new AssetMaterialGroup<T>[] { new AssetMaterialGroup<T>() };
@@ -168,35 +178,39 @@ namespace EnhancedFramework.Core {
         protected override void OnValidate() {
             base.OnValidate();
 
-            List<Material> _unassignedMaterials = unassignedMaterials.collection;
-            int _unassignedCount = _unassignedMaterials.Count;
+            ref List<Material> _span = ref unassignedMaterials.collection;
+            int _count = _span.Count;
 
-            if (_unassignedCount == 0) {
+            if (_count == 0) {
                 return;
             }
 
             // Update unassigned materials.
             foreach (AssetMaterialGroup<T> _asset in groups) {
 
-                for (int i = _unassignedCount; i-- > 0;) {
+                for (int i = _count; i-- > 0;) {
 
                     // If material is now assigned, unregister it.
-                    if (_asset.GetAsset(_unassignedMaterials[i], out _)) {
-                        _unassignedMaterials.RemoveAt(i);
+                    if (_asset.GetAsset(_span[i], out _)) {
+                        _span.RemoveAt(i);
 
-                        if (--_unassignedCount == 0) {
+                        if (--_count == 0) {
                             return;
                         }
                     }
                 }
             }
 
-            this.LogWarningMessage($"{_unassignedCount} unassigned Material(s) in this database");
+            this.LogWarningMessage($"{_count} unassigned Material(s) in this database");
         }
         #endif
         #endregion
 
         #region Utility
+        // -------------------------------------------
+        // Get
+        // -------------------------------------------
+
         /// <summary>
         /// Get the <see cref="T"/> asset associated with a specific material from this database.
         /// </summary>
@@ -204,8 +218,11 @@ namespace EnhancedFramework.Core {
         /// <returns>Asset associated with this material (default if none).</returns>
         public T GetAsset(Material _material) {
 
-            for (int i = 0; i < groups.Length; i++) {
-                if (groups[i].GetAsset(_material, out T _asset)) {
+            ref AssetMaterialGroup<T>[] _span = ref groups;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                if (_span[i].GetAsset(_material, out T _asset)) {
                     return _asset;
                 }
             }
@@ -231,7 +248,9 @@ namespace EnhancedFramework.Core {
             return DefaultAsset;
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Other
+        // -------------------------------------------
 
         /// <summary>
         /// Assigns a specific <see cref="T"/> asset to a <see cref="Material"/>.
@@ -240,8 +259,11 @@ namespace EnhancedFramework.Core {
         /// <param name="_asset">Asset to associate with the material.</param>
         public void AssignAsset(Material _material, T _asset) {
 
-            for (int i = 0; i < groups.Length; i++) {
-                AssetMaterialGroup<T> _group = groups[i];
+            ref AssetMaterialGroup<T>[] _span = ref groups;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                AssetMaterialGroup<T> _group = _span[i];
 
                 if (_group.GetAsset(_material, out T _assignedAsset)) {
 
@@ -255,7 +277,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            ArrayUtility.Add(ref groups, new AssetMaterialGroup<T>(_asset, _material));
+            ArrayUtility.Add(ref _span, new AssetMaterialGroup<T>(_asset, _material));
         }
 
         /// <summary>
@@ -272,20 +294,22 @@ namespace EnhancedFramework.Core {
         [Button(SuperColor.DarkOrange, IsDrawnOnTop = false)]
         public void CheckDuplicateMaterials() {
 
+            ref AssetMaterialGroup<T>[] _span = ref groups;
+            int _count = _span.Length;
+
             duplicateMaterials.Clear();
 
-            for (int i = groups.Length; i-- > 1;) {
+            for (int i = _count; i-- > 1;) {
 
-                List<Material> _materials = groups[i].Materials.List;
-                int _count = _materials.Count;
+                ref List<Material> _materials = ref _span[i].Materials.List;
+                int _materialCount = _materials.Count;
 
-                for (int j = 0; j < _count; j++) {
+                for (int j = 0; j < _materialCount; j++) {
 
                     Material _material = _materials[j];
-
                     for (int k = 0; k < i; k++) {
 
-                        if (groups[k].GetAsset(_material, out _)) {
+                        if (_span[k].GetAsset(_material, out _)) {
                             duplicateMaterials.Add(_material);
                         }
                     }

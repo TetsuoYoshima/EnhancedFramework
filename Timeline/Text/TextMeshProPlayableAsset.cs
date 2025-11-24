@@ -24,6 +24,10 @@ namespace EnhancedFramework.Timeline {
     /// </summary>
     /// <typeparam name="T">The <see cref="EnhancedPlayableBehaviour"/> playable for this asset.</typeparam>
     public abstract class TextMeshProPlayableAsset<T> : EnhancedPlayableAsset<T, TextMeshProUGUI>, ITextMeshProPlayableAsset
-                                                        where T : EnhancedPlayableBehaviour<TextMeshProUGUI>, new() { }
+                                                        where T : EnhancedPlayableBehaviour<TextMeshProUGUI>, new() {
+        #region Global Members
+        public const string NamePrefix = "Text/";
+        #endregion
+    }
 }
 #endif

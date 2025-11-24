@@ -16,6 +16,8 @@ namespace EnhancedFramework.Core.Option {
         [Tooltip("Options are not saved on disk, and reset after each play")]
         None = 0,
 
+        [Separator(SeparatorPosition.Top)]
+
         [Tooltip("Project / Executable data folder path")]
         ApplicationPath = 1,
 
@@ -40,7 +42,6 @@ namespace EnhancedFramework.Core.Option {
         public static string Get(this OptionPath _path, bool _autoCreate = true) {
 
             string _directory;
-
             switch (_path) {
 
                 case OptionPath.ApplicationPath:

@@ -47,10 +47,10 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
+            StopOnExit = false;
+            Transform  = null;
             Particle   = null;
             Options    = FeedbackPlayOptions.None;
-            Transform  = null;
-            StopOnExit = false;
         }
 
         public override void OnEnter() {

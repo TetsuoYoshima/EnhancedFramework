@@ -41,7 +41,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void Pause() {
             if (Playable.Value is EnhancedPlayablePlayer _playable) {

@@ -20,6 +20,8 @@ namespace EnhancedFramework.Timeline {
     /// </summary>
     public abstract class AudioEnhancedPlayableAsset : EnhancedPlayableAsset, IAudioEnhancedPlayableAsset {
         #region Global Members
+        public const string NamePrefix = "Audio/";
+
         /// <summary>
         /// <see cref="AudioSource"/> bound object of this playable.
         /// </summary>

@@ -15,10 +15,10 @@ namespace EnhancedFramework.UI {
     /// <see cref="FadingGroupController"/> used to manage UI interaction.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(FrameworkUtility.MenuPath + "UI/Fading Group/Fading Group Interaction Controller"), DisallowMultipleComponent]
+    [AddComponentMenu(FrameworkUtility.MenuPath + "UI/Fading Group/Interaction [Fading Group Controller]"), DisallowMultipleComponent]
     public sealed class FadingGroupInteractionController : FadingGroupController {
         #region Global Members
-        [Section("Fading Group Interaction Controller")]
+        [Section("Interaction [Fading Group Controller]")]
 
         [Tooltip("If true, fires a callback when the interface cancel button is being performed")]
         [SerializeField] private bool useCancelCallback = false;
@@ -45,8 +45,9 @@ namespace EnhancedFramework.UI {
         /// </summary>
         public static event Action OnDisableInputs = null;
 
-        // -----------------------
-
+        // -------------------------------------------
+        // Show
+        // -------------------------------------------
         public override void OnShowStarted(FadingGroup _group) {
             base.OnShowStarted(_group);
 
@@ -75,7 +76,9 @@ namespace EnhancedFramework.UI {
             SelectionUtility.ApplySelection();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Hide
+        // -------------------------------------------
 
         public override void OnHideStarted(FadingGroup _group) {
             base.OnHideStarted(_group);
@@ -95,7 +98,6 @@ namespace EnhancedFramework.UI {
 
             // Enable last group.
             if (_wasActive && groupBuffer.SafeLast(out var _active)) {
-
                 FadingGroup _activeGroup = _active.First;
 
                 _activeGroup.SetInteractable(true);
@@ -114,7 +116,9 @@ namespace EnhancedFramework.UI {
             }
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Special
+        // -------------------------------------------
 
         /// <summary>
         /// Can be called when receiving a cancel event from UI, which will execute the last registered associated group callback.
@@ -123,12 +127,11 @@ namespace EnhancedFramework.UI {
         public static bool OnGroupCancelEvent() {
 
             // Call last registered cancel event.
-            var _bufferSpan = groupBuffer.collection;
+            ref var _bufferSpan = ref groupBuffer.collection;
 
             for (int i = _bufferSpan.Count; i-- > 0;) {
 
                 FadingGroupInteractionController _controller = _bufferSpan[i].Second;
-
                 if (_controller.useCancelCallback) {
 
                     // Call event.
@@ -136,7 +139,6 @@ namespace EnhancedFramework.UI {
 
                     // Audio.
                     AudioAsset _audio = _controller.cancelAudio;
-
                     if (_audio.IsValid()) {
                         _audio.PlayAudio();
                     }

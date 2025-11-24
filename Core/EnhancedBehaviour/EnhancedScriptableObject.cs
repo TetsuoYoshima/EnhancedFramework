@@ -85,7 +85,7 @@ namespace EnhancedFramework.Core {
             if (!Application.isPlaying) {
 
                 EnhancedObjectID _objectID = new EnhancedObjectID(this);
-                if (objectID == _objectID) {
+                if (objectID.Equals(_objectID)) {
                     return;
                 }
 
@@ -111,7 +111,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <returns>True if they are the same, false otherwise.</returns>
         public bool Equals(EnhancedScriptableObject _other) {
-            return _other.IsValid() && (ID == _other.ID);
+            return _other.IsValid() && ID.Equals(_other.ID);
         }
         #endregion
     }

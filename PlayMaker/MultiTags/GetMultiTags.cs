@@ -36,8 +36,8 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            GameObject = null;
-            StoreBehaviour = null;            
+            StoreBehaviour = null;
+            GameObject     = null;
         }
 
         public override void OnEnter() {
@@ -47,15 +47,19 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void GetTags() {
             if (StoreBehaviour.Value is MultiTagsBehaviour _behaviour) {
-                GameObject _gameObject = Fsm.GetOwnerDefaultTarget(GameObject);
 
-                _behaviour.Tags = (_gameObject.IsValid() && _gameObject.GetTags(out TagGroup _tags))
-                                ? _tags
-                                : new TagGroup();
+                GameObject _gameObject = Fsm.GetOwnerDefaultTarget(GameObject);
+                TagGroup _tags = (_gameObject.IsValid() && _gameObject.GetTags(out TagGroup _temp))
+                                ? _temp
+                                : TagGroup.Empty;
+
+                _behaviour.Tags.SetTags(_tags);
             }
         }
         #endregion

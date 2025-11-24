@@ -14,7 +14,7 @@ namespace EnhancedFramework.Timeline {
     /// <summary>
     /// Manages the visibility of a <see cref="FadingObjectBehaviour"/> for the duration of the clip.
     /// </summary>
-    [DisplayName("Fading Object/Fade")]
+    [DisplayName(NamePrefix + "Fade")]
     public sealed class FadingObjectFadeClip : FadingObjectFadePlayableAsset<FadingObjectFadePlayableBehaviour> {
         #region Utility
         public override string ClipDefaultName {

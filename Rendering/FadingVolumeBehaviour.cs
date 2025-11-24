@@ -26,7 +26,7 @@ namespace EnhancedFramework.Rendering {
     /// <para/> Fading is performed using tweening, if enabled.
     /// </summary>
     [Serializable]
-    public sealed class FadingVolume : IFadingObject {
+    public sealed class FadingVolume : FadingObject {
         #region Global Members
         /// <summary>
         /// This object <see cref="UnityEngine.Rendering.Volume"/>.
@@ -58,171 +58,65 @@ namespace EnhancedFramework.Rendering {
 
         // -----------------------
 
-        public bool IsVisible {
-            get { return Volume.weight == FadeWeight.y; }
-        }
-
-        public float ShowDuration {
+        public override float ShowDuration {
             get { return fadeInDuration; }
         }
 
-        public float HideDuration {
+        public override float HideDuration {
             get { return fadeOutDuration; }
+        }
+
+        public override bool IsVisible {
+            get { return Volume.weight == FadeWeight.y; }
+        }
+
+        public override bool RealTime {
+            get { return true; }
         }
         #endregion
 
         #region Behaviour
         private const int DefaultGUID = 0;
 
+        private Action<float> onSetFadeValue  = null;
+        private Action<bool>  onFadeStopped   = null;
+        private Action<bool>  onFadeCompleteCallback = null;
+
         private TweenHandler tween = default;
-        private DelayHandler delay = default;
 
         // -------------------------------------------
-        // General
+        // Core
         // -------------------------------------------
 
-        public void Show(Action _onComplete = null) {
-            CancelCurrentFade();
-
-            #if TWEENING
-            Fade(FadeWeight.y, fadeInDuration, fadeInEase, _onComplete);
-            #else
-            Fade(FadeWeight.y, fadeInDuration, _onComplete);
-            #endif
+        protected override void OnShow(bool _isInstant, Action<bool> _onComplete = null) {
+            OnFade(_isInstant, FadeWeight.y, fadeInDuration,
+                   #if TWEENING
+                   fadeInEase,
+                   #endif
+                   _onComplete);
         }
 
-        public void Hide(Action _onComplete = null) {
-            CancelCurrentFade();
-            #if TWEENING
-            Fade(FadeWeight.x, fadeOutDuration, fadeOutEase, _onComplete);
-            #else
-            Fade(FadeWeight.x, fadeOutDuration, _onComplete);
-            #endif
-        }
-
-        public void FadeInOut(float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action _onComplete = null) {
-            Show(OnShow);
-
-            // ----- Local Methods ----- \\
-
-            void OnShow() {
-                _onAfterFadeIn?.Invoke();
-                delay = Delayer.Call(_duration, OnWaitComplete, true);
-            }
-
-            void OnWaitComplete() {
-                _onBeforeFadeOut?.Invoke();
-                Hide(_onComplete);
-            }
-        }
-
-        public void Fade(FadingMode _mode, Action _onComplete = null, float _inOutWaitDuration = .5f) {
-            switch (_mode) {
-                case FadingMode.Show:
-                    Show(_onComplete);
-                    break;
-
-                case FadingMode.Hide:
-                    Hide(_onComplete);
-                    break;
-
-                case FadingMode.FadeInOut:
-                    FadeInOut(_inOutWaitDuration, null, null, _onComplete);
-                    break;
-
-                case FadingMode.None:
-                default:
-                    break;
-            }
-        }
-
-        public void Invert(Action _onComplete = null) {
-            SetVisibility(!IsVisible, _onComplete);
-        }
-
-        public void SetVisibility(bool _isVisible, Action _onComplete = null) {
-            if (_isVisible) {
-                Show(_onComplete);
-            } else {
-                Hide(_onComplete);
-            }
+        protected override void OnHide(bool _isInstant, Action<bool> _onComplete = null) {
+            OnFade(_isInstant, FadeWeight.x, fadeOutDuration,
+                   #if TWEENING
+                   fadeOutEase,
+                   #endif
+                   _onComplete);
         }
 
         // -------------------------------------------
-        // Instant
+        // Internal
         // -------------------------------------------
 
-        public void Show(bool _isInstant, Action _onComplete = null) {
-            if (_isInstant) {
-                Fade(FadeWeight.y, _onComplete);
-            } else {
-                Show(_onComplete);
-            }
+        public override void Evaluate(float _time, bool _show) {
+
+            float _duration = _show ? fadeInDuration : fadeOutDuration;
+            float _value    = (_duration != 0f) ? Mathf.Clamp01(_time / _duration) : 0f;
+
+            SetFadeValue(_value, _show);
         }
 
-        public void Hide(bool _isInstant, Action _onComplete = null) {
-            if (_isInstant) {
-                Fade(FadeWeight.x, _onComplete);
-            } else {
-                Hide(_onComplete);
-            }
-        }
-
-        public void Fade(FadingMode _mode, bool _isInstant, Action _onComplete = null, float _inOutWaitDuration = .5f) {
-            switch (_mode) {
-                case FadingMode.Show:
-                    Show(_isInstant, _onComplete);
-                    break;
-
-                case FadingMode.Hide:
-                    Hide(_isInstant, _onComplete);
-                    break;
-
-                case FadingMode.FadeInOut:
-                    if (_isInstant) {
-                        Show(_isInstant, _onComplete);
-                        Hide(_isInstant, _onComplete);
-                    } else {
-                        FadeInOut(_inOutWaitDuration, null, null, _onComplete);
-                    }
-                    break;
-
-                case FadingMode.None:
-                default:
-                    break;
-            }
-        }
-
-        public void Invert(bool _isInstant, Action _onComplete = null) {
-            SetVisibility(!IsVisible, _isInstant, _onComplete);
-        }
-
-        public void SetVisibility(bool _isVisible, bool _isInstant, Action _onComplete = null) {
-            if (_isVisible) {
-                Show(_isInstant, _onComplete);
-            } else {
-                Hide(_isInstant, _onComplete);
-            }
-        }
-
-        // -------------------------------------------
-        // Utility
-        // -------------------------------------------
-
-        public void Evaluate(float _time, bool _show) {
-            float _value;
-
-            if (_show) {
-                _value = (fadeInDuration != 0f) ? (_time / fadeInDuration) : 0f;
-            } else {
-                _value = (fadeOutDuration != 0f) ? (_time / fadeOutDuration) : 0f;
-            }
-
-            SetFadeValue(Mathf.Clamp(_value, 0f, 1f), _show);
-        }
-
-        public void SetFadeValue(float _value, bool _show) {
-            CancelCurrentFade();
+        public override void SetFadeValue(float _value, bool _show) {
             float _weight;
 
             #if TWEENING
@@ -232,14 +126,19 @@ namespace EnhancedFramework.Rendering {
                 _weight = DOVirtual.EasedValue(FadeWeight.y, FadeWeight.x, _value, fadeOutEase);
             }
             #else
-            _weight = Mathf.Lerp(FadeWeight.x, FadeWeight.y, _value);
+            if (_show) {
+                _alpha = Mathf.Lerp(FadeWeight.x, FadeWeight.y, _value);
+            } else {
+                _alpha = Mathf.Lerp(FadeWeight.y, FadeWeight.x, _value);
+            }
             #endif
 
+            CancelCurrentFade();
             SetWeight(_weight);
         }
 
-        private void CancelCurrentFade() {
-            delay.Cancel();
+        public override void CancelCurrentFade() {
+            base.CancelCurrentFade();
 
             #if EDITOR_COROUTINE
             if (!Application.isPlaying && (coroutine != null)) {
@@ -247,7 +146,58 @@ namespace EnhancedFramework.Rendering {
             }
             #endif
 
+            // Stop, without complete.
             tween.Stop();
+        }
+
+        // -------------------------------------------
+        // Fade
+        // -------------------------------------------
+
+        private void OnFade(bool _isInstant, float _value, float _duration,
+                            #if TWEENING
+                            Ease _ease,
+                            #endif
+                            Action<bool> _onComplete) {
+
+            CancelCurrentFade();
+            onFadeCompleteCallback = _onComplete;
+
+            // Instant.
+            if (_isInstant || (_duration == 0f)) {
+                SetWeight(_value);
+                OnStopped(true);
+                return;
+            }
+
+            // Already faded.
+            if (Volume.weight == _value) {
+                OnStopped(true);
+                return;
+            }
+
+            // Delegates.
+            if (onSetFadeValue == null) {
+                onSetFadeValue = Set;
+                onFadeStopped  = OnStopped;
+            }
+
+            // Tween.
+            tween = Core.Tweener.Tween(Volume.weight, _value, onSetFadeValue, _duration,
+                                       #if TWEENING
+                                       _ease,
+                                       #endif
+                                       true, onFadeStopped);
+
+            // ----- Local Methods ----- \\
+
+            void Set(float _value) {
+                SetWeight(_value);
+            }
+
+            void OnStopped(bool _completed) {
+                onFadeCompleteCallback?.Invoke(_completed);
+            }
         }
 
         private void SetWeight(float _weight) {
@@ -260,63 +210,6 @@ namespace EnhancedFramework.Rendering {
 
             if (EnableVolume) {
                 Volume.enabled = !Mathf.Approximately(_weight, FadeWeight.x);
-            }
-        }
-
-        // -------------------------------------------
-        // Fade
-        // -------------------------------------------
-
-        private void Fade(float _weight, Action _onComplete) {
-            CancelCurrentFade();
-            SetWeight(_weight);
-
-            _onComplete?.Invoke();
-        }
-
-        private void Fade(float _weight, float _duration, Action _onComplete) {
-            DoFade(_weight, CreateTween, _onComplete);
-
-            // ----- Local Method ----- \\
-
-            TweenHandler CreateTween(Action<float> _setter, Action<bool> _onStopped) {
-                return Core.Tweener.Tween(Volume.weight, _weight, _setter, _duration, true, _onStopped);
-            }
-        }
-
-        #if TWEENING
-        private void Fade(float _weight, float _duration, Ease _ease, Action _onComplete) {
-            DoFade(_weight, CreateTween, _onComplete);
-
-            // ----- Local Method ----- \\
-
-            TweenHandler CreateTween(Action<float> _setter, Action<bool> _onStopped) {
-                return Core.Tweener.Tween(Volume.weight, _weight, _setter, _duration, _ease, true, _onStopped);
-            }
-        }
-        #endif
-
-        // -----------------------
-
-        private void DoFade(float _weight, Func<Action<float>, Action<bool>, TweenHandler> _tweener, Action _onComplete) {
-            CancelCurrentFade();
-
-            if (Volume.weight == _weight) {
-                OnStopped();
-                return;
-            }
-
-            // Tween.
-            tween = _tweener(Set, OnStopped);
-
-            // ----- Local Methods ----- \\
-
-            void Set(float _value) {
-                SetWeight(_value);
-            }
-
-            void OnStopped(bool _completed = false) {
-                _onComplete?.Invoke();
             }
         }
         #endregion
@@ -356,6 +249,10 @@ namespace EnhancedFramework.Rendering {
 
         #region Enhanced Behaviour
         #if UNITY_EDITOR
+        // -------------------------------------------
+        // Editor
+        // -------------------------------------------
+
         protected override void OnValidate() {
             base.OnValidate();
 

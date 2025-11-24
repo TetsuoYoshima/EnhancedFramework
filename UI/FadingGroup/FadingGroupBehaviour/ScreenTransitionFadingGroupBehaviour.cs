@@ -14,6 +14,6 @@ namespace EnhancedFramework.UI {
     /// <br/> Use this to quickly implement fading <see cref="CanvasGroup"/> using <see cref="ScreenFadingGroup"/> transitions.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(FrameworkUtility.MenuPath + "UI/Fading Group/Screen Transition Fading Group"), DisallowMultipleComponent]
+    [AddComponentMenu(FrameworkUtility.MenuPath + "UI/Fading Group/Screen Transition [Fading Group]"), DisallowMultipleComponent]
     public sealed class ScreenTransitionFadingGroupBehaviour : FadingObjectTransitionFadingGroupBehaviour<ScreenTransitionFadingGroup> { }
 }

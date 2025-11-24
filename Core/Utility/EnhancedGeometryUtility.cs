@@ -23,7 +23,8 @@ namespace EnhancedFramework.Core {
         public static bool PointInPolygon(Vector3 _point, List<Vector3> _vertices) {
 
             // Sanity check - not enough bounds vertices = nothing to be inside of.
-            if (_vertices.Count < 3) {
+            int _count = _vertices.Count;
+            if (_count < 3) {
                 return false;
             }
 
@@ -31,7 +32,7 @@ namespace EnhancedFramework.Core {
             // Odd = Inside, Even = Outside.
             int _collisions = 0;
             int _vertexCounter = 0;
-            Vector3 _startPoint = _vertices[_vertices.Count - 1];
+            Vector3 _startPoint = _vertices[_count - 1];
 
             // We recenter the test point around the origin to simplify the math a bit.
             _startPoint.x -= _point.x;
@@ -45,7 +46,7 @@ namespace EnhancedFramework.Core {
 
                 // We need a definitive side of the horizontal axis to start with (since we need to know when we cross it),
                 // so we go backwards through the vertices until we find one that does not lie on the horizontal.
-                for (int i = _vertices.Count - 2; i >= 0; --i) {
+                for (int i = _count - 2; i >= 0; --i) {
 
                     float _vertZ = _vertices[i].z;
                     _vertZ -= _point.z;
@@ -57,7 +58,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            while (_vertexCounter < _vertices.Count) {
+            while (_vertexCounter < _count) {
 
                 Vector3 _endPoint = _vertices[_vertexCounter];
                 _endPoint.x -= _point.x;
@@ -103,7 +104,8 @@ namespace EnhancedFramework.Core {
         public static bool PointInPolygon(Vector2 _point, List<Vector2> _vertices) {
 
             // Sanity check - not enough bounds vertices = nothing to be inside of.
-            if (_vertices.Count < 3) {
+            int _count = _vertices.Count;
+            if (_count < 3) {
                 return false;
             }
 
@@ -111,7 +113,7 @@ namespace EnhancedFramework.Core {
             // Odd = Inside, Even = Outside.
             int _collisions = 0;
             int _vertexCounter = 0;
-            Vector2 _startPoint = _vertices[_vertices.Count - 1];
+            Vector2 _startPoint = _vertices[_count - 1];
 
             // We recenter the test point around the origin to simplify the math a bit.
             _startPoint.x -= _point.x;
@@ -125,7 +127,7 @@ namespace EnhancedFramework.Core {
 
                 // We need a definitive side of the horizontal axis to start with (since we need to know when we cross it),
                 // so we go backwards through the vertices until we find one that does not lie on the horizontal.
-                for (int i = _vertices.Count - 2; i >= 0; --i) {
+                for (int i = _count - 2; i >= 0; --i) {
 
                     float _vertZ = _vertices[i].y;
                     _vertZ -= _point.y;
@@ -137,7 +139,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            while (_vertexCounter < _vertices.Count) {
+            while (_vertexCounter < _count) {
 
                 Vector2 _endPoint = _vertices[_vertexCounter];
                 _endPoint.x -= _point.x;
@@ -183,16 +185,17 @@ namespace EnhancedFramework.Core {
         public static bool PointInPolygon3D(Vector3 _point, List<Vector3> _vertices) {
 
             // Not enough bounds vertices = nothing to be inside of.
-            if (_vertices.Count < 3) {
+            int _count = _vertices.Count;
+            if (_count < 3) {
                 return false;
             }
 
             // Compute the sum of the angles between the test point and each pair of edge points.
-            double _angleSum = 0;
-            for (int i = 0; i < _vertices.Count; i++) {
+            double _angleSum = 0d;
+            for (int i = 0; i < _count; i++) {
 
                 Vector3 _toA = _vertices[i] - _point;
-                Vector3 _toB = _vertices[(i + 1) % _vertices.Count] - _point;
+                Vector3 _toB = _vertices[(i + 1) % _count] - _point;
                 float _distance = _toA.sqrMagnitude * _toB.sqrMagnitude; // Use sqrMagnitude, take sqrt of result later.
 
                 // On a vertex
@@ -201,7 +204,7 @@ namespace EnhancedFramework.Core {
                 }
 
                 double _cosTheta = Vector3.Dot(_toA, _toB) / Mathf.Sqrt(_distance);
-                double _angle = Math.Acos(_cosTheta);
+                double _angle    = Math.Acos(_cosTheta);
 
                 _angleSum += _angle;
             }

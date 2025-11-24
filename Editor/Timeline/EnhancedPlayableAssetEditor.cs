@@ -51,7 +51,6 @@ namespace EnhancedFramework.Editor {
             Object _binding = _director.GetGenericBinding(_track);
 
             if ((_clip.asset is EnhancedPlayableAsset _asset) && _asset.SerializeBindingInComponent) {
-
                 _director.gameObject.AddComponentIfNone<EnhancedPlayableBindingData>().RegisterData(_asset, _binding);
             }
         }

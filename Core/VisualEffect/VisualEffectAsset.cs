@@ -24,7 +24,10 @@ namespace EnhancedFramework.Core {
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
+        [Tooltip("Reference transform related local offset correction")]
         [SerializeField] private Vector3 localOffset = Vector3.zero;
+
+        [Tooltip("Local scale applied to this FX")]
         [SerializeField] private Vector3 scale = Vector3.one;
 
         [Space(10f)]
@@ -102,31 +105,31 @@ namespace EnhancedFramework.Core {
         /// <summary>
         /// Sets this effect current handler.
         /// </summary>
-        /// <param name="_player">This effect current handler.</param>
-        internal void SetHandler(VisualEffectHandler _player) {
-            handler = _player;
+        /// <param name="_handler">This effect current handler.</param>
+        internal void SetHandler(VisualEffectHandler _handler) {
+            handler = _handler;
         }
 
         /// <summary>
         /// Get the last created <see cref="VisualEffectHandler"/> to play this effect.
         /// </summary>
-        /// <param name="_player">Last created <see cref="VisualEffectHandler"/> for this effect.</param>
+        /// <param name="_handler">Last created <see cref="VisualEffectHandler"/> for this effect.</param>
         /// <returns>True if this effect handler is valid, false otherwise.</returns>
-        public bool GetHandler(out VisualEffectHandler _player) {
-            _player = handler;
-            return _player.IsValid;
+        public bool GetHandler(out VisualEffectHandler _handler) {
+            _handler = handler;
+            return _handler.IsValid;
         }
 
         // -------------------------------------------
         // Feedback
         // -------------------------------------------
 
-        protected override void DoPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
+        protected override void DoPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
             // Instant play (delay managed in the player).
-            OnPlay(_transform, _position, _options);
+            OnPlay(_options, _transform, _position);
         }
 
-        protected override void OnPlay(Transform _transform, Vector3 _position, FeedbackPlayOptions _options) {
+        protected override void OnPlay(FeedbackPlayOptions _options, Transform _transform, Vector3 _position) {
             switch (_options) {
                 // Play at position.
                 case FeedbackPlayOptions.PlayAtPosition:

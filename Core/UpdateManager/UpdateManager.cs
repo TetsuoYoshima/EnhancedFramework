@@ -109,8 +109,8 @@ namespace EnhancedFramework.Core {
 
         private readonly EnhancedCollection<IStableUpdate> stableUpdates    = new EnhancedCollection<IStableUpdate>();
 
-        private readonly PairCollection<IInitUpdate, UpdateRegistration> initUpdates    = new PairCollection<IInitUpdate, UpdateRegistration>(10);
-        private readonly PairCollection<IPlayUpdate, UpdateRegistration> playUpdates    = new PairCollection<IPlayUpdate, UpdateRegistration>();
+        private readonly PairCollection<IInitUpdate, UpdateRegistration> initUpdates = new PairCollection<IInitUpdate, UpdateRegistration>(10);
+        private readonly PairCollection<IPlayUpdate, UpdateRegistration> playUpdates = new PairCollection<IPlayUpdate, UpdateRegistration>();
         #endregion
 
         #region Global Registration
@@ -151,6 +151,7 @@ namespace EnhancedFramework.Core {
 
             // ----- Local Method ----- \\
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void DoRegister<U>(EnhancedCollection<U> _list, UpdateRegistration _flag) {
 
                 if (_registration.HasFlagUnsafe(_flag) && (_object is U _update)) {
@@ -196,6 +197,7 @@ namespace EnhancedFramework.Core {
 
             // ----- Local Methods= ----- \\
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void DoUnregister<U>(EnhancedCollection<U> _list, UpdateRegistration _flag) where U : class {
 
                 if (_registration.HasFlagUnsafe(_flag) && (_object is U _update)) {
@@ -207,7 +209,7 @@ namespace EnhancedFramework.Core {
 
         #region Enhanced Behaviour
         private const long InitWatcherMaxDuration = 100L; // In milliseconds, so about 0,1 second.
-        private readonly Stopwatch initWatcher = new Stopwatch();
+        private readonly Stopwatch initWatcher    = new Stopwatch();
 
         #if DEVELOPMENT
         private double loadingDuration = 0d;
@@ -273,10 +275,9 @@ namespace EnhancedFramework.Core {
                 // --- Call.
 
                 _init.IsInitialized = true;
-
-                // Once the object is initialized, register its other updates.
                 _initSpan.Remove(_init);
 
+                // Once the object is initialized, register its other updates.
                 Register<IBaseUpdate>(_init, _pair.Second);
             }
 
@@ -309,10 +310,9 @@ namespace EnhancedFramework.Core {
                 // --- Call.
 
                 _play.IsPlaying = true;
-
-                // Once the object is playing, register its other updates.
                 _playSpan.Remove(_play);
 
+                // Once the object is playing, register its other updates.
                 Register<IBaseUpdate>(_play, _pair.Second);
             }
 
@@ -321,7 +321,7 @@ namespace EnhancedFramework.Core {
 
             UpdatePermanents();
 
-            List<IEarlyUpdate> _earlySpan = earlyUpdates.collection;
+            ref List<IEarlyUpdate> _earlySpan = ref earlyUpdates.collection;
             for (i = _earlySpan.Count; i-- > 0;) {
                 var _update = _earlySpan[i];
 
@@ -332,7 +332,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            List<IInputUpdate> _inputSpan = inputUpdates.collection;
+            ref List<IInputUpdate> _inputSpan = ref inputUpdates.collection;
             for (i = _inputSpan.Count; i-- > 0;) {
                 var _update = _inputSpan[i];
 
@@ -344,7 +344,7 @@ namespace EnhancedFramework.Core {
             }
 
             // Clamp to avoid being above collection count - may happen if multiple unsubscription during one update.
-            List<IDynamicUpdate> _dynamicSpan = dynamicUpdates.collection;
+            ref List<IDynamicUpdate> _dynamicSpan = ref dynamicUpdates.collection;
             for (i = _dynamicSpan.Count; (i = Mathf.Min(i - 1, _dynamicSpan.Count - 1)) >= 0;) {
 
                 IDynamicUpdate _update;
@@ -361,7 +361,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            List<IUpdate> _updateSpan = updates.collection;
+            ref  List<IUpdate> _updateSpan = ref updates.collection;
             for (i = _updateSpan.Count; i-- > 0;) {
                 var _update = _updateSpan[i];
 
@@ -372,7 +372,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            List<IMovableUpdate> _movableSpan = movableUpdates.collection;
+            ref List<IMovableUpdate> _movableSpan = ref movableUpdates.collection;
             for (i = _movableSpan.Count; i-- > 0;) {
                 var _update = _movableSpan[i];
 
@@ -383,7 +383,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            List<ILateUpdate> _lateSpan = lateUpdates.collection;
+            ref List < ILateUpdate > _lateSpan = ref lateUpdates.collection;
             for (i = _lateSpan.Count; i-- > 0;) {
                 var _update = _lateSpan[i];
 
@@ -399,7 +399,7 @@ namespace EnhancedFramework.Core {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void UpdatePermanents() {
 
-                List<IStableUpdate> _stableSpan = stableUpdates.collection;
+                ref List < IStableUpdate > _stableSpan = ref stableUpdates.collection;
                 for (int i = _stableSpan.Count; i-- > 0;) {
 
                     var _update = _stableSpan[i];
@@ -412,6 +412,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void LogException(Exception _exception, IBaseUpdate _update) {
 
                 Object _object = _update.LogObject;

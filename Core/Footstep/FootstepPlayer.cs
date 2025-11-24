@@ -32,11 +32,13 @@ namespace EnhancedFramework.Core {
             [Tooltip("Disables this footstep player")]
             Disabled = 0,
 
+            [Separator(SeparatorPosition.Top)]
+
             [Tooltip("Uses animation events to play footstep effects")]
             AnimationEvent = 1,
 
             [Tooltip("Automatically plays events according to foot positions")]
-            FootPosition = 2,
+            FootPosition   = 2,
         }
         #endregion
 
@@ -61,7 +63,7 @@ namespace EnhancedFramework.Core {
         [SerializeField, Enhanced, Required] private AudioMaterialDatabase audioDatabase = null;
 
         [Tooltip("Additional feedbacks to play on footstep")]
-        [SerializeField] private EnhancedAssetFeedback[] feedbacks = new EnhancedAssetFeedback[0];
+        [SerializeField] private EnhancedFeedbacks feedbacks = new EnhancedFeedbacks();
 
         [Space(10f)]
 
@@ -110,8 +112,8 @@ namespace EnhancedFramework.Core {
             base.OnInit();
 
             // Cooldown init.
-            GetFootCooldown(Foot.Left) .Reload(minInterval);
             GetFootCooldown(Foot.Right).Reload(minInterval);
+            GetFootCooldown(Foot.Left) .Reload(minInterval);
         }
 
         void ILateUpdate.Update() {
@@ -125,6 +127,7 @@ namespace EnhancedFramework.Core {
             UpdateFootsteps();
         }
 
+        #if UNITY_EDITOR
         // -------------------------------------------
         // Editor
         // -------------------------------------------
@@ -133,19 +136,20 @@ namespace EnhancedFramework.Core {
             base.OnValidate();
 
             // Feet.
-            if (!leftFoot && transform.FindChildResursive("leftfoot", out Transform _leftFoot, false)) {
-                leftFoot = _leftFoot;
-            }
-
             if (!rightFoot && transform.FindChildResursive("rightfoot", out Transform _rightFoot, false)) {
                 rightFoot = _rightFoot;
             }
+
+            if (!leftFoot  && transform.FindChildResursive("leftfoot",  out Transform _leftFoot,  false)) {
+                leftFoot = _leftFoot;
+            }
         }
+#endif
         #endregion
 
         #region Mode Callbacks
-        private bool isLeftFootGrounded  = true;
         private bool isRightFootGrounded = true;
+        private bool isLeftFootGrounded  = true;
 
         // -----------------------
 
@@ -167,8 +171,8 @@ namespace EnhancedFramework.Core {
         /// </summary>
         private void UpdateFootsteps() {
 
-            UpdateFoot(Foot.Left,  ref isLeftFootGrounded);
             UpdateFoot(Foot.Right, ref isRightFootGrounded);
+            UpdateFoot(Foot.Left,  ref isLeftFootGrounded);
 
             // ----- Local Method ----- \\
 
@@ -209,7 +213,6 @@ namespace EnhancedFramework.Core {
 
         /// <inheritdoc cref="PlayFootstep(Foot, Transform, Vector3)"/>
         public bool PlayFootstep(Foot _foot) {
-
             Transform _transform = GetFootTransform(_foot, out Vector3 _localPosition);
             return PlayFootstep(_foot, _transform, _localPosition);
         }
@@ -241,9 +244,7 @@ namespace EnhancedFramework.Core {
             }
 
             // Feedbacks.
-            for (int i = 0; i < feedbacks.Length; i++) {
-                feedbacks[i].Play(_transform, FeedbackPlayOptions.PlayAtPosition);
-            }
+            feedbacks.Play(_transform, FeedbackPlayOptions.PlayAtPosition);
 
             return true;
         }
@@ -269,7 +270,6 @@ namespace EnhancedFramework.Core {
             // 3D.
             float _distance = _offset + ContactOffset;
             if (Physics.Raycast(_position, -transform.up, out RaycastHit _hit, _distance, mask.value, QueryTriggerInteraction.Ignore)) {
-
                 return _hit.GetSharedMaterial(out _material);
             }
 
@@ -338,9 +338,7 @@ namespace EnhancedFramework.Core {
         [Button(SuperColor.Green, IsDrawnOnTop = false)]
         public void SetupFootBones() {
 
-            Animator _animator = GetComponentInChildren<Animator>();
-            if (!_animator) {
-
+            if (!this.TryGetComponentInChildren(out Animator _animator)) {
                 this.LogWarningMessage("No Animator could be found on this object - associated bones could be be retrieved");
                 return;
             }
@@ -349,8 +347,8 @@ namespace EnhancedFramework.Core {
             UnityEditor.Undo.RecordObject(this, "Setup Foot Bones");
             #endif
 
-            leftFoot  = _animator.GetBoneTransform(HumanBodyBones.LeftFoot);
             rightFoot = _animator.GetBoneTransform(HumanBodyBones.RightFoot);
+            leftFoot  = _animator.GetBoneTransform(HumanBodyBones.LeftFoot);
         }
         #endregion
     }

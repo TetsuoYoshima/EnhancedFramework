@@ -20,6 +20,7 @@ namespace EnhancedFramework.UI {
     /// </summary>
     public enum SelectableState {
         Normal      = 0,
+
         Highlighted = 1,
         Pressed     = 2,
         Selected    = 3,
@@ -52,9 +53,15 @@ namespace EnhancedFramework.UI {
         [Tooltip("Automatically selects this selectable whenever its GameObject gets enabled")]
         [SerializeField, HideInInspector] public bool AutoSelectOnEnabled = false;
 
-        [Space(5f)]
+        [Tooltip("Automatically deselects this selectable whenever the pointer exits this object")]
+        [SerializeField, HideInInspector] public bool DeselectOnPointerExit = true;
+
+        [Space(10f)]
 
         [SerializeField, HideInInspector] public EnhancedSelectableEffect[] Effects = new EnhancedSelectableEffect[0];
+
+        // -----------------------
+
         [SerializeField, Enhanced, ReadOnly] private FadingObjectBehaviour group = null;
 
         // -----------------------
@@ -112,7 +119,6 @@ namespace EnhancedFramework.UI {
                 if ((_object.FadingObject is FadingGroup _group) && _group.UseSelectable) {
 
                     if (group != _object) {
-
                         group = _object;
                         EditorUtility.SetDirty(this);
                     }
@@ -123,10 +129,14 @@ namespace EnhancedFramework.UI {
                 _transform = _transform.parent;
             }
         }
-        #endif
+#endif
         #endregion
 
         #region Selectable
+        private bool isDeselecting = false;
+
+        // -----------------------
+
         public override void OnPointerEnter(PointerEventData _eventData) {
             base.OnPointerEnter(_eventData);
 
@@ -134,11 +144,35 @@ namespace EnhancedFramework.UI {
             Select();
         }
 
+        public override void OnPointerExit(PointerEventData eventData) {
+            base.OnPointerExit(eventData);
+
+            // Deselect.
+            if (DeselectOnPointerExit && !isDeselecting) {
+
+                #if UNITY_EDITOR
+                if (!Application.isPlaying) {
+                    return;
+                }
+                #endif
+
+                EventSystem _eventSystem = EventSystem.current;
+                if (_eventSystem.currentSelectedGameObject == gameObject) {
+
+                    isDeselecting = true;
+                    _eventSystem.SetSelectedGameObject(null);
+                    isDeselecting = false;
+                }
+            }
+        }
+
         public override void OnDeselect(BaseEventData _eventData) {
             base.OnDeselect(_eventData);
 
             // Simulate pointer exit.
+            isDeselecting = true;
             OnPointerExit(null);
+            isDeselecting = false;
         }
 
         public override void Select() {
@@ -159,6 +193,12 @@ namespace EnhancedFramework.UI {
         protected override void DoStateTransition(SelectionState _state, bool _instant) {
             base.DoStateTransition(_state, _instant);
 
+            #if UNITY_EDITOR
+            if (!Application.isPlaying) {
+                return;
+            }
+            #endif
+
             // Force selection.
             if (_state == SelectionState.Selected) {
                 Select();
@@ -167,10 +207,19 @@ namespace EnhancedFramework.UI {
             // Apply effects.
             SelectableState _selectableState = GetSelectableState(_state);
 
-            foreach (EnhancedSelectableEffect _effect in Effects) {
+            ref EnhancedSelectableEffect[] _span = ref Effects;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                EnhancedSelectableEffect _effect = _span[i];
+
+                #if DEVELOPMENT
+                // Security.
                 if (_effect == null) {
+                    this.LogErrorMessage($"Null effect at index {i}");
                     continue;
                 }
+                #endif
 
                 _effect.OnSelectionState(this, _selectableState, _instant);
             }

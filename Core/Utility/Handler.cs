@@ -70,7 +70,7 @@ namespace EnhancedFramework.Core {
         /// <inheritdoc cref="Handler{T}"/>
         public Handler(T _handler, int _id) {
             handle = _handler;
-            id = _id;
+            id     = _id;
         }
         #endregion
 

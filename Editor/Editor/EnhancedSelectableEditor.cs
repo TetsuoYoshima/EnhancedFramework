@@ -16,24 +16,26 @@ namespace EnhancedFramework.Editor {
     public sealed class EnhancedSelectableEditor : SelectableEditor {
         #region Editor GUI
         public override void OnInspectorGUI() {
-            serializedObject.Update();
+            SerializedObject _serializedObject = serializedObject;
+            _serializedObject.Update();
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("AutoSelectOnEnabled"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("Effects"));
+            EditorGUILayout.PropertyField(_serializedObject.FindProperty("AutoSelectOnEnabled"));
+            EditorGUILayout.PropertyField(_serializedObject.FindProperty("DeselectOnPointerExit"));
+            EditorGUILayout.PropertyField(_serializedObject.FindProperty("Effects"));
 
-            serializedObject.ApplyModifiedProperties();
-            serializedObject.Update();
+            _serializedObject.ApplyModifiedProperties();
+            _serializedObject.Update();
 
             EditorGUILayout.Space(5f);
             base.OnInspectorGUI();
 
-            SerializedProperty _last = serializedObject.FindProperty("group");
+            SerializedProperty _last = _serializedObject.FindProperty("group");
 
             while (_last.NextVisible(false)) {
                 EditorGUILayout.PropertyField(_last);
             }
 
-            serializedObject.ApplyModifiedProperties();
+            _serializedObject.ApplyModifiedProperties();
         }
         #endregion
     }

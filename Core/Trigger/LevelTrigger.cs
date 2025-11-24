@@ -93,13 +93,11 @@ namespace EnhancedFramework.Core {
             /// <param name="_angle">Angle to check (relative to this trigger forward direction).</param>
             /// <returns>True if the given angle is in this portal range, false otherwise.</returns>
             public bool IsInRange(float _angle) {
-                Vector2Int _range = DirectionAngle;
-
                 if (inverse && (_angle > 0f)) {
                     _angle -= 360f;
                 }
 
-                return _range.Contains(_angle);
+                return DirectionAngle.Contains(_angle);
             }
             #endregion
         }
@@ -197,6 +195,7 @@ namespace EnhancedFramework.Core {
         [Tooltip("Required tags for other objects to interact with this trigger")]
         [SerializeField] protected TagGroup requiredTags = new TagGroup();
 
+        [Tooltip("Required flags for this trigger to be interactable")]
         [SerializeField] protected FlagValueGroup requiredFlags = new FlagValueGroup();
 
         [Space(5f)]
@@ -216,6 +215,7 @@ namespace EnhancedFramework.Core {
 
         [Space(10f), HorizontalLine(SuperColor.Green, 1f), Space(10f)]
 
+        [Tooltip("This object reference trigger collider")]
         [SerializeField, Enhanced, Required] protected new Collider collider = null;
         #endregion
 
@@ -225,16 +225,16 @@ namespace EnhancedFramework.Core {
         // Editor
         // -------------------------------------------
 
-        private const int RaycastInterval           = 2;
         private const float InactiveHandlesAlpha    = .5f;
         private const float ActiveHandlesAlpha      = .7f;
         private const float ExitHandleDuration      = 5f;
+        private const int RaycastInterval           = 2;
 
         private static readonly RaycastHit[] hitBuffer = new RaycastHit[16];
         private EnhancedBehaviour actor = null;
 
         private float exitActorTime = 0f;
-        private float exitAngle = 0f;
+        private float exitAngle     = 0f;
 
         // -----------------------
 
@@ -369,13 +369,13 @@ namespace EnhancedFramework.Core {
         /// <param name="_callback"><see cref="ITrigger"/> instance to unregister.</param>
         public void UnregisterCallback(ITrigger _callback) {
 
-            List<Callback> _callbacks = callbacks.List;
-            int _count = _callbacks.Count;
+            ref List<Callback> _span = ref callbacks.List;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
-                if (_callbacks[i].Trigger == _callback) {
 
-                    _callbacks.RemoveAt(i);
+                if (_span[i].Trigger == _callback) {
+                    _span.RemoveAt(i);
                     return;
                 }
             }
@@ -430,11 +430,11 @@ namespace EnhancedFramework.Core {
             // Callbacks.
             PortalIdentifier _portal = GetInteractionPortal(_behaviour);
 
-            List<Callback> _callbacks = callbacks.List;
-            int _callbackCount = _callbacks.Count;
+            ref List<Callback> _span = ref callbacks.List;
+            int _count = _span.Count;
 
-            for (int i = 0; i < _callbackCount; i++) {
-                _callbacks[i].OnEnterTrigger(_actor, _portal);
+            for (int i = 0; i < _count; i++) {
+                _span[i].OnEnterTrigger(_actor, _portal);
             }
 
             #if UNITY_EDITOR
@@ -449,11 +449,11 @@ namespace EnhancedFramework.Core {
             // Callbacks.
             PortalIdentifier _portal = GetInteractionPortal(_behaviour);
 
-            List<Callback> _callbacks = callbacks.List;
-            int _callbackCount = _callbacks.Count;
+            ref List < Callback > _span = ref callbacks.List;
+            int _count = _span.Count;
 
-            for (int i = 0; i < _callbackCount; i++) {
-                _callbacks[i].OnExitTrigger(_actor, _portal);
+            for (int i = 0; i < _count; i++) {
+                _span[i].OnExitTrigger(_actor, _portal);
             }
 
             #if UNITY_EDITOR
@@ -462,13 +462,12 @@ namespace EnhancedFramework.Core {
 
                 exitActorTime = Time.time;
                 exitAngle = GetActorAngle(_behaviour);
-                actor = null;
+                actor     = null;
             }
             #endif
 
             // Disable.
             if (onlyOnce) {
-
                 collider.enabled = false;
                 enabled = false;
             }
@@ -492,13 +491,15 @@ namespace EnhancedFramework.Core {
             PortalIdentifier _direction = PortalIdentifier.None;
 
             // Interacting portal.
-            int _portalCount = portals.Count;
-            if (_portalCount != 0) {
+            ref Portal[] _span = ref portals.Array;
+            int _count = _span.Length;
+
+            if (_count != 0) {
 
                 float _angle = GetActorAngle(_behaviour);
-                for (int i = 0; i < _portalCount; i++) {
+                for (int i = 0; i < _count; i++) {
 
-                    Portal _portal = portals[i];
+                    Portal _portal = _span[i];
                     if (_portal.IsInRange(_angle)) {
 
                         _direction = _portal.Identifier;

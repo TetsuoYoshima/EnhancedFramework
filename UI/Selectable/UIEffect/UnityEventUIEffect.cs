@@ -13,10 +13,10 @@ namespace EnhancedFramework.UI {
     /// Invoke a <see cref="UnityEvent"/>.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Event UI Effect"), DisallowMultipleComponent]
+    [AddComponentMenu(MenuPath + "Event [UI Effect]"), DisallowMultipleComponent]
     public sealed class UnityEventUIEffect : EnhancedSelectableEffect {
         #region Global Members
-        [Section("Unity Event Effect")]
+        [Section("Unity Event [UI Effect]")]
 
         [SerializeField] private EnumValues<SelectableState, UnityEvent> events = new EnumValues<SelectableState, UnityEvent>(null);
         #endregion

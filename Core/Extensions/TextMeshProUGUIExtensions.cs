@@ -60,14 +60,15 @@ namespace EnhancedFramework.Core {
         /// <returns>Total amount of characters displayed for the specified amount of visible characters.</returns>
         public static int GetVisibleCharacterCount(this TextMeshProUGUI _text) {
 
-            TMP_TextInfo _info  = _text.textInfo;
+            TMP_TextInfo _info = _text.textInfo;
             int _count = 0;
 
             for (int i = _info.characterCount; i-- > 0;) {
 
                 TMP_CharacterInfo _character = _info.characterInfo[i];
-                if (_character.isVisible)
+                if (_character.isVisible) {
                     _count++;
+                }
             }
 
             return _count;

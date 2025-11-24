@@ -6,6 +6,7 @@
 
 using EnhancedFramework.Core;
 using HutongGames.PlayMaker;
+using System;
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -38,22 +39,35 @@ namespace EnhancedFramework.PlayMaker {
         #endregion
 
         #region Behaviour
+        private Action<VideoPlayer> onStopped = null;
+        private Action<VideoPlayer> onResumed = null;
+        private Action<VideoPlayer> onPaused  = null;
+
+        // -----------------------
+
         public override void Reset() {
             base.Reset();
 
-            Video        = null;
-            PausedEvent  = null;
-            ResumedEvent = null;
             StoppedEvent = null;
+            ResumedEvent = null;
+            PausedEvent  = null;
+            Video        = null;
         }
 
         public override void OnEnter() {
             base.OnEnter();
 
             if (Video.Value is EnhancedVideoPlayer _video) {
-                _video.Paused   += OnPaused;
-                _video.Resumed  += OnResumed;
-                _video.Stopped  += OnStopped;
+
+                if (onStopped == null) {
+                    onStopped = OnStopped;
+                    onResumed = OnResumed;
+                    onPaused  = OnPaused;
+                }
+
+                _video.Stopped += onStopped;
+                _video.Resumed += onResumed;
+                _video.Paused  += onPaused;
 
                 _video.Play();
             }
@@ -65,13 +79,15 @@ namespace EnhancedFramework.PlayMaker {
             base.OnExit();
 
             if (Video.Value is EnhancedVideoPlayer _video) {
-                _video.Paused   -= OnPaused;
-                _video.Resumed  -= OnResumed;
-                _video.Stopped  -= OnStopped;
+                _video.Stopped -= onStopped;
+                _video.Resumed -= onResumed;
+                _video.Paused  -= onPaused;
             }
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void OnPaused(VideoPlayer _video) {
             Fsm.Event(PausedEvent);

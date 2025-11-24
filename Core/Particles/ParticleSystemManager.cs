@@ -59,10 +59,10 @@ namespace EnhancedFramework.Core {
         void IStableUpdate.Update() {
 
             // Particles update.
-            List<EnhancedParticleSystemPlayer> _particlesSpan = particles;
+            ref List<EnhancedParticleSystemPlayer> _span = ref particles;
 
-            for (int i = _particlesSpan.Count; i-- > 0;) {
-                _particlesSpan[i].ParticleUpdate();
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].ParticleUpdate();
             }
         }
 
@@ -80,14 +80,14 @@ namespace EnhancedFramework.Core {
         private void OnStartLoading() {
 
             // Stop playing all particles.
-            List<EnhancedParticleSystemPlayer> _particlesSpan = particles;
+            ref List<EnhancedParticleSystemPlayer> _span = ref particles;
 
-            for (int i = _particlesSpan.Count; i-- > 0;) {
-                _particlesSpan[i].Stop(ParticleSystemStopBehavior.StopEmittingAndClear);
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].Stop(ParticleSystemStopBehavior.StopEmittingAndClear);
             }
 
             // Clear pools.
-            List<Pair<ParticleSystemAsset, Transform>> _poolSpan = particlePools.collection;
+            ref List<Pair<ParticleSystemAsset, Transform>> _poolSpan = ref particlePools.collection;
 
             for (int i = _poolSpan.Count; i-- > 0;) {
 
@@ -105,7 +105,7 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Registration
-        private static readonly List<EnhancedParticleSystemPlayer> particles = new List<EnhancedParticleSystemPlayer>();
+        private static List<EnhancedParticleSystemPlayer> particles = new List<EnhancedParticleSystemPlayer>();
 
         // -----------------------
 
@@ -122,7 +122,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_player"><see cref="EnhancedParticleSystemPlayer"/> to unregister.</param>
         internal static void UnregisterPlayer(EnhancedParticleSystemPlayer _player) {
-            particles.Remove(_player);
+            particles.RemoveSwap(_player);
         }
         #endregion
 
@@ -173,11 +173,11 @@ namespace EnhancedFramework.Core {
             }
 
             // Player pause.
-            List<EnhancedParticleSystemPlayer> _particlesSpan = particles;
-            int _count = _particlesSpan.Count;
+            ref List<EnhancedParticleSystemPlayer> _span = ref particles;
+            int _count = _span.Count;
 
             for (int i = 0; i < _count; i++) {
-                EnhancedParticleSystemPlayer _particle = _particlesSpan[i];
+                EnhancedParticleSystemPlayer _particle = _span[i];
                 if (!_particle.IgnorePause) {
 
                     // Pause / Resume.

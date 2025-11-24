@@ -50,10 +50,10 @@ namespace EnhancedFramework.DeveloperConsoleSystem {
         /// <param name="_parameterDescriptions"><inheritdoc cref="ParameterDescriptions" path="/summary"/></param>
         /// <inheritdoc cref="DeveloperConsoleCommandAttribute"/>
         public DeveloperConsoleCommandAttribute(string _name, string _aliases, string _description, params string[] _parameterDescriptions) {
-            Name = _name;
-            Aliases = _aliases;
-            Description = _description;
             ParameterDescriptions = _parameterDescriptions;
+            Description           = _description;
+            Aliases               = _aliases;
+            Name                  = _name;
         }
         #endregion
     }

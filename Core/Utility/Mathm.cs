@@ -18,19 +18,9 @@ namespace EnhancedFramework.Core {
     /// </summary>
     public static class Mathm {
         #region Mathematic
-        /// <summary>
-        /// Clamps the given value between a minimum and a maximum.
-        /// </summary>
-        /// <param name="_value">The value to restrict inside the range of the min and max values.</param>
-        /// <param name="_min">The minimum value to compare against.</param>
-        /// <param name="_max">The maximum value to compare against.</param>
-        /// <returns>The result between the min and max values.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double Clamp(double _value, double _min, double _max) {
-            return (_value < _min)
-                 ? _min : ((_value > _max)
-                        ? _max : _value);
-        }
+        // -------------------------------------------
+        // Range
+        // -------------------------------------------
 
         /// <inheritdoc cref="IsInRange(float, float, float)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,6 +55,10 @@ namespace EnhancedFramework.Core {
             return (_value > _min) && (_value < _max);
         }
 
+        // -------------------------------------------
+        // Loop
+        // -------------------------------------------
+
         /// <inheritdoc cref="LoopIncrement(float, float, float)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LoopIncrement(int _value, int _limit, int _increase) {
@@ -91,6 +85,24 @@ namespace EnhancedFramework.Core {
             }
 
             return _value;
+        }
+
+        // -------------------------------------------
+        // Clamp
+        // -------------------------------------------
+
+        /// <summary>
+        /// Clamps the given value between a minimum and a maximum.
+        /// </summary>
+        /// <param name="_value">The value to restrict inside the range of the min and max values.</param>
+        /// <param name="_min">The minimum value to compare against.</param>
+        /// <param name="_max">The maximum value to compare against.</param>
+        /// <returns>The result between the min and max values.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Clamp(double _value, double _min, double _max) {
+            return (_value < _min)
+                 ? _min : ((_value > _max)
+                        ? _max : _value);
         }
 
         /// <summary>
@@ -285,6 +297,10 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Rotation
+        // -------------------------------------------
+        // Angle
+        // -------------------------------------------
+
         /// <summary>
         /// Get the angle used to adjust a given forward vector on another vector, snapping to the nearest given angle.
         /// </summary>
@@ -296,6 +312,116 @@ namespace EnhancedFramework.Core {
             }
 
             return value;
+        }
+
+        // -------------------------------------------
+        // Rotate
+        // -------------------------------------------
+
+        /// <summary>
+        /// Get the value to add to a given rotation to increase it by a given offset, for a specific axis and angle.
+        /// </summary>
+        /// <param name="_axis">Offset axis reference.</param>
+        /// <param name="_angle">Offset rotation angle.</param>
+        /// <inheritdoc cref="GetOffsetRotation(Quaternion, Quaternion)"/>
+        public static Quaternion GetOffsetRotation(Quaternion _rotation, Vector3 _axis, float _angle) {
+            Quaternion _offset = Quaternion.AngleAxis(_angle, _axis);
+            return GetOffsetRotation(_rotation, _offset);
+        }
+
+        /// <summary>
+        /// Get the value to add to a given rotation to increase it by a given offset.
+        /// </summary>
+        /// <param name="_rotation">Rotation value to modify.</param>
+        /// <param name="_offset">Offset used to increase the given rotation.</param>
+        /// <returns>Rotation offset to add to the given rotation.</returns>
+        public static Quaternion GetOffsetRotation(Quaternion _rotation, Quaternion _offset) {
+            return Quaternion.Inverse(_rotation) * _offset * _rotation;
+        }
+
+        /// <summary>
+        /// Rotates a given position with a given rotation around a specific pivot point in space.
+        /// </summary>
+        /// <param name="_pivot">Pivot position used to rotate around.</param>
+        /// <param name="_axis">Rotation axis value.</param>
+        /// <param name="_angle">Angle value used to rotate.</param>
+        /// <param name="_position">Reference position value to modify.</param>
+        /// <param name="_rotation">Reference rotation value to modify.</param>
+        public static void RotateAround(Vector3 _pivot, Vector3 _axis, float _angle, ref Vector3 _position, ref Quaternion _rotation) {
+            Quaternion _rotationOffset = Quaternion.AngleAxis(_angle, _axis);
+            Vector3    _positionOffset = _rotationOffset * (_position - _pivot);
+
+            _position = _pivot + _positionOffset;
+            _rotation *= GetOffsetRotation(_rotation, _axis, _angle);
+        }
+
+        /// <param name="_position">Reference position.</param>
+        /// <param name="_rotation">Reference rotation.</param>
+        /// <param name="_newPosition">New modified position value.</param>
+        /// <param name="_newRotation">New modified rotation value.</param>
+        /// <inheritdoc cref="RotateAround(Vector3, Vector3, float, ref Vector3, ref Quaternion)"/>
+        public static void RotateAround(Vector3 _pivot, Vector3 _axis, float _angle, Vector3 _position, Quaternion _rotation, out Vector3 _newPosition, out Quaternion _newRotation) {
+            _newPosition = _position;
+            _newRotation = _rotation;
+
+            RotateAround(_pivot, _axis, _angle, ref _newPosition, ref _newRotation);
+        }
+
+        // -------------------------------------------
+        // Look Rotation
+        // -------------------------------------------
+
+        /// <summary>
+        /// Creates a rotation with the specified upward and forward directions - upward is always kept as it is.
+        /// </summary>
+        /// <param name="_forward">The vector that defines in which direction forward is.</param>
+        /// <param name="_upward">The vector that defines in which direction up is.</param>
+        /// <returns>Rotation using the specified upward and forward directions.</returns>
+        public static Quaternion LookUpwardsRotation(Vector3 _forward, Vector3 _upward) {
+            Vector3 _right;
+            
+            // Keep upwards, recalculate forward.
+            _upward = _upward.normalized;
+            _right   = Vector3.Cross(_upward, _forward).normalized;
+            _forward = Vector3.Cross(_upward,   _right).normalized;
+
+            return LookRotation(_forward, _upward, _right);
+        }
+
+        /// <summary>
+        /// Creates a rotation with the specified forward and upward directions - forward is always kept as it is.
+        /// </summary>
+        /// <inheritdoc cref="LookUpwardsRotation"/>
+        public static Quaternion LookForwardRotation(Vector3 _forward, Vector3 _upward) {
+            Vector3 _right;
+
+            // Keep forward, recalculate upward.
+            _forward = _forward.normalized;
+            _right   = Vector3.Cross(_upward, _forward).normalized;
+            _upward  = Vector3.Cross(_forward,  _right).normalized;
+
+            return LookRotation(_forward, _upward, _right);
+        }
+
+        // -----------------------
+
+        private static Quaternion LookRotation(Vector3 _forward, Vector3 _upward, Vector3 _right) {
+            // Matrix.
+            Matrix4x4 _matrix = Matrix4x4.identity;
+            _matrix.SetColumn(0, _right);
+            _matrix.SetColumn(1, _upward);
+            _matrix.SetColumn(2, _forward);
+
+            // CQuaternion.
+            Quaternion _quaternion = Quaternion.identity;
+            _quaternion.w = Mathf.Sqrt(1f + _matrix.m00 + _matrix.m11 + _matrix.m22) / 2f;
+
+            float _q4 = _quaternion.w * 4;
+            _quaternion.x = (_matrix.m21 - _matrix.m12) / _q4;
+            _quaternion.y = (_matrix.m02 - _matrix.m20) / _q4;
+            _quaternion.z = (_matrix.m10 - _matrix.m01) / _q4;
+
+            return _quaternion;
         }
         #endregion
 
@@ -410,7 +536,7 @@ namespace EnhancedFramework.Core {
                 return -1;
 
             float _random = Random.Range(_minValue, _sum);
-            int _count = _buffer.Count;
+            int _count    = _buffer.Count;
 
             _sum = 0f;
 

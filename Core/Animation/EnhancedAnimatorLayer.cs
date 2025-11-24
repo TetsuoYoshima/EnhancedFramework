@@ -69,8 +69,12 @@ namespace EnhancedFramework.Core {
 
             layerIndex = _index;
 
-            for (int i = 0; i < states.Length; i++) {
-                states[i].Initialize(_index);
+            // States.
+            ref EnhancedAnimatorState[] _span = ref states;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Initialize(_index);
             }
         }
         #endregion
@@ -85,8 +89,11 @@ namespace EnhancedFramework.Core {
         /// <returns>True if the given state could be successfully played, false otherwise.</returns>
         public bool Play(Animator _animator, int _stateHash, bool _instant = false) {
 
-            for (int i = 0; i < states.Length; i++) {
-                EnhancedAnimatorState _state = states[i];
+            ref EnhancedAnimatorState[] _span = ref states;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                EnhancedAnimatorState _state = _span[i];
 
                 if (_state.Hash == _stateHash) {
 
@@ -103,7 +110,6 @@ namespace EnhancedFramework.Core {
 
             // Instant.
             if (_instant) {
-
                 _animator.Play(defaultState.Hash, layerIndex);
                 return;
             }
@@ -121,7 +127,9 @@ namespace EnhancedFramework.Core {
             PlayDefault(_animator, _settings);
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Internal
+        // -------------------------------------------
 
         private void PlayDefault(Animator _animator, EnhancedAnimatorTransitionSettings _settings) {
             EnhancedAnimatorTransition _transition = EnhancedAnimatorTransition.GetCache(_settings, StateTransitionMode.CrossFade);
@@ -138,8 +146,11 @@ namespace EnhancedFramework.Core {
         /// <returns>True if the associated state could be successfully retrieved, false otherwise.</returns>
         public bool GetState(int _stateHash, out EnhancedAnimatorState _state) {
 
-            for (int i = 0; i < states.Length; i++) {
-                EnhancedAnimatorState _temp = states[i];
+            ref EnhancedAnimatorState[] _span = ref states;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                EnhancedAnimatorState _temp = _span[i];
 
                 if (_temp.Hash == _stateHash) {
 
@@ -166,7 +177,6 @@ namespace EnhancedFramework.Core {
 
             // Layer.
             AnimatorControllerLayer[] _layers = _animator.layers;
-            AnimatorControllerLayer _layer;
 
             if (_layers.Length == _layerIndex) {
 
@@ -174,14 +184,14 @@ namespace EnhancedFramework.Core {
                 _layers = _animator.layers;
             }
 
-            _layer = _layers[_layerIndex];
+            AnimatorControllerLayer _layer = _layers[_layerIndex];
 
-            _layer.name = layerName;
             _layer.defaultWeight = weight;
-            _layer.blendingMode = AnimatorLayerBlendingMode.Override;
+            _layer.blendingMode  = AnimatorLayerBlendingMode.Override;
+            _layer.name          = layerName;
 
             _animator.layers = _layers;
-            layerIndex = _layerIndex;
+            layerIndex       = _layerIndex;
 
             // States.
             EnhancedCollection<AnimatorState> _states = new EnhancedCollection<AnimatorState>();

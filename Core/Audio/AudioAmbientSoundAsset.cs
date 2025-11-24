@@ -5,6 +5,7 @@
 // ================================================================================== //
 
 using EnhancedEditor;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 using Random = UnityEngine.Random;
@@ -33,7 +34,7 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Global Members
-        [Section("Ambient Sound")]
+        [Section("Ambient Sound Asset")]
 
         [Tooltip("Audio sound to play")]
         [SerializeField, Enhanced, Required] private AudioAsset sound = null;
@@ -43,20 +44,20 @@ namespace EnhancedFramework.Core {
         [Tooltip("Determines from which reference position to play this sound")]
         [SerializeField] private PlayMode playMode = PlayMode.FromAmbientCenter;
 
-        [Tooltip("Min max delay interval between each playing of this sound (in seconds)")]
+        [Tooltip("Min-max delay interval between each playing of this sound (in seconds)")]
         [SerializeField, Enhanced, MinMax(0f, 60f)] private Vector2 playInterval = new Vector2(5f, 10f);
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
-        [Tooltip("The min max normalized distance between the actor and the ambient center required to play this sound")]
+        [Tooltip("The min-max normalized distance between the actor and the ambient center required to play this sound")]
         [SerializeField, Enhanced, MinMax(0f, 1f)] private Vector2 activationRange = new Vector2(0f, 1f);
 
         [Space(10f)]
 
-        [Tooltip("Min max flat distance (X & Z axises) used to play this sound from the reference position")]
+        [Tooltip("Min-max flat distance (X & Z axises) used to play this sound from the reference position")]
         [SerializeField, Enhanced, MinMax(nameof(PlayFlatRange))] private Vector2 playFlatDistance = new Vector2(1f, 3f);
 
-        [Tooltip("Min max vertical distance (Y axis) used to play this sound from the reference position")]
+        [Tooltip("Min-max vertical distance (Y axis) used to play this sound from the reference position")]
         [SerializeField, Enhanced, MinMax(nameof(PlayVerticalRange))] private Vector2 playVerticalDistance = new Vector2(0f, 1f);
 
         [Space(10f)]
@@ -90,7 +91,7 @@ namespace EnhancedFramework.Core {
         /// <summary>
         /// Get a random local position to play this sound from (using the game listener or the ambient center).
         /// </summary>
-        public Vector3 PlayPosition {
+        public Vector3 RandomPlayPosition {
             get { return (Random.onUnitSphere * playFlatDistance.Random()).SetY(playVerticalDistance.Random()); }
         }
 
@@ -113,12 +114,23 @@ namespace EnhancedFramework.Core {
 
         #region Utility
         /// <summary>
+        /// Plays this ambient sound at a given position.
+        /// </summary>
+        /// <param name="_position"><inheritdoc cref="GetPlayPosition" path="/param[@name='_position']"/></param>
+        /// <returns><inheritdoc cref="AudioAsset.PlayAudio" path="/returns"/></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AudioHandler PlaySound(Vector3 _position) {
+            return Sound.PlayAudio(GetPlayPosition(_position));
+        }
+
+        /// <summary>
         /// Get a random world position to play this sound from.
         /// </summary>
         /// <param name="_position">Reference world position to get a random play distance from.</param>
         /// <returns>World position to play this sound from.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 GetPlayPosition(Vector3 _position) {
-            return _position + PlayPosition;
+            return _position + RandomPlayPosition;
         }
 
         /// <summary>

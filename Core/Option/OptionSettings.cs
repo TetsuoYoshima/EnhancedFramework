@@ -178,7 +178,7 @@ namespace EnhancedFramework.Core.Option {
             get {
 
                 float _value = Volume - MinVolume;
-                float _max   = 1f - MinVolume;
+                float _max   = 1f     - MinVolume;
 
                 float _percent = (_value == 0f) ? 0f : (_value / _max);
                 return Mathf.RoundToInt(_percent * (stepCount - 1));
@@ -203,9 +203,9 @@ namespace EnhancedFramework.Core.Option {
         #region Behaviour
         public override void Apply(bool _isInit = false) {
 
-            float _volume = isMute ? MinVolume : volume;
+            float _volume = isMute  ? MinVolume : volume;
             float _value  = _volume - MinVolume;
-            float _max    = 1f - MinVolume;
+            float _max    = 1f      - MinVolume;
 
             float _percent = (_value == 0f) ? 0f : (_value / _max);
 
@@ -256,7 +256,6 @@ namespace EnhancedFramework.Core.Option {
         /// </summary>
         /// <param name="_isMute">True to mute this audio, false to unmute it.</param>
         public void Mute(bool _isMute) {
-
             isMute = _isMute;
             Apply();
         }
@@ -410,9 +409,11 @@ namespace EnhancedFramework.Core.Option {
         /// <returns>The option associated with the given guid and name.</returns>
         public BaseGameOption GetOption(int _guid, string _name, ScriptableGameOption _gameOption) {
 
-            int _index = GeOptionIndex(option.Options);
+            ref BaseGameOption[] _options = ref option.Options;
+            int _index = GeOptionIndex(ref _options);
+
             if (_index != -1) {
-                return option.Options[_index];
+                return _options[_index];
             }
 
             BaseGameOption _option = _gameOption.CreateOption();
@@ -420,14 +421,14 @@ namespace EnhancedFramework.Core.Option {
             _option.name = _name;
             _option.guid = _guid;
 
-            ArrayUtility.Add(ref option.Options, _option);
+            ArrayUtility.Add(ref _options, _option);
             return _option;
 
             // ----- Local Method ----- \\
 
-            int GeOptionIndex(BaseGameOption[] _options) {
+            int GeOptionIndex(ref BaseGameOption[] _options) {
 
-                for (int i = 0; i < _options.Length; i++) {
+                for (int i = _options.Length; i-- > 0;) {
                     BaseGameOption _option = _options[i];
 
                     if ((_option.GUID == _guid) && _option.Name.Equals(_name, StringComparison.OrdinalIgnoreCase)) {
@@ -455,8 +456,11 @@ namespace EnhancedFramework.Core.Option {
             // Loading and initialization.
             Load();
 
-            foreach (ScriptableGameOption _option in scriptableOptions) {
-                _option.Initialize(this);
+            ref ScriptableGameOption[] _span = ref scriptableOptions;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Initialize(this);
             }
 
             Apply(true);
@@ -468,8 +472,11 @@ namespace EnhancedFramework.Core.Option {
         /// </summary>
         [Button(SuperColor.Green, IsDrawnOnTop = false)]
         public void Apply(bool _isInit = false) {
-            for (int i = 0; i < option.Options.Length; i++) {
-                option.Options[i].Apply(_isInit);
+            ref BaseGameOption[] _options = ref option.Options;
+            int _count = _options.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _options[i].Apply(_isInit);
             }
         }
 
@@ -478,8 +485,11 @@ namespace EnhancedFramework.Core.Option {
         /// </summary>
         [Button(SuperColor.HarvestGold, IsDrawnOnTop = false)]
         public void Refresh() {
-            for (int i = 0; i < option.Options.Length; i++) {
-                option.Options[i].Refresh();
+            ref BaseGameOption[] _options = ref option.Options;
+            int _count = _options.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _options[i].Refresh();
             }
         }
         #endregion
@@ -557,7 +567,7 @@ namespace EnhancedFramework.Core.Option {
         // -----------------------
 
         /// <inheritdoc cref="MissingCrossCeneReferenceException(string, Exception)"/>
-        public GameOptionException() : base(string.Format(MessageFormat, "[Uknown]")) { }
+        public GameOptionException() : base(string.Format(MessageFormat, "[Unknown]")) { }
 
         /// <inheritdoc cref="MissingCrossCeneReferenceException(string, Exception)"/>
         public GameOptionException(string _guid) : base(string.Format(MessageFormat, _guid)) { }

@@ -94,7 +94,7 @@ namespace EnhancedFramework.UI {
             UpdateEffect();
 
             positionSequence.DoComplete(true);
-            sizeSequence.DoComplete(true);
+            sizeSequence    .DoComplete(true);
         }
 
         void ILateUpdate.Update() {
@@ -135,8 +135,11 @@ namespace EnhancedFramework.UI {
 
                 positionSequence = DOTween.Sequence(); {
 
-                    foreach (Echo _echo in echoes) {
-                        positionSequence.Join(_echo.Move(_position));
+                    ref Echo[] _span = ref echoes;
+                    int _count = _span.Length;
+
+                    for (int i = 0; i < _count; i++) {
+                        positionSequence.Join(_span[i].Move(_position));
                     }
                 }
 
@@ -155,7 +158,12 @@ namespace EnhancedFramework.UI {
                     float _scale = (Mathm.ApproximatelyZero(_size.x) && Mathm.ApproximatelyZero(_size.y))
                                  ? 0f : 1f;
 
-                    foreach (Echo _echo in echoes) {
+                    ref Echo[] _span = ref echoes;
+                    int _count = _span.Length;
+
+                    for (int i = 0; i < _count; i++) {
+                        Echo _echo = _span[i];
+
                         sizeSequence.Join(_echo.SizeDelta(_size));
                         sizeSequence.Join(_echo.Scale(_scale));
                     }
@@ -170,10 +178,10 @@ namespace EnhancedFramework.UI {
             if (!SelectionUtility.IsSelection) {
 
                 positionSequence.Kill(true);
-                sizeSequence.Kill(true);
+                sizeSequence    .Kill(true);
             }
 
-            // ----- Local Method ----- \\
+            // ----- Local Methods ----- \\
 
             void OnPositionKilled() {
                 positionSequence = null;

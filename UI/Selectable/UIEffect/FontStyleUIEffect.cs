@@ -14,10 +14,10 @@ namespace EnhancedFramework.UI {
     /// Set the font styles of the button text.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Font UI Effect"), DisallowMultipleComponent]
+    [AddComponentMenu(MenuPath + "Font [UI Effect]"), DisallowMultipleComponent]
     public sealed class FontStyleUIEffect : EnhancedSelectableEffect {
         #region Global Members
-        [Section("Font Style Effect")]
+        [Section("Font Style [UI Effect]")]
 
         [SerializeField, Enhanced, Required] private TextMeshProUGUI text = null;
 

@@ -37,8 +37,8 @@ namespace EnhancedFramework.PlayMaker {
         public override void Reset() {
             base.Reset();
 
-            SceneBundle   = null;
             LoadSceneMode = null;
+            SceneBundle   = null;
         }
 
         public override void OnEnter() {

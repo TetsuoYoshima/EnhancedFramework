@@ -5,6 +5,7 @@
 // ================================================================================== //
 
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace EnhancedFramework.Core.GameStates {
@@ -337,11 +338,13 @@ namespace EnhancedFramework.Core.GameStates {
         }
 
         /// <inheritdoc cref="GameStateManager.IsActive{T}(out GameState, bool)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsActive<T>(out GameState _state, bool _inherit = true) where T : GameState {
             return GameStateManager.Instance.IsActive<T>(out _state, _inherit);
         }
 
         /// <inheritdoc cref="GameStateManager.IsActive(Type, out GameState, bool)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsActive(Type _type, out GameState _state, bool _inherit = true) {
             return GameStateManager.Instance.IsActive(_type, out _state, _inherit);
         }
@@ -367,7 +370,6 @@ namespace EnhancedFramework.Core.GameStates {
         #region State Override
         public override sealed void OnGameStateOverride(GameStateOverride _state) {
             base.OnGameStateOverride(_state);
-
             OnStateOverride(_state as T);
         }
 
@@ -388,6 +390,7 @@ namespace EnhancedFramework.Core.GameStates {
         /// </summary>
         /// <param name="_state">The <see cref="GameState"/> to check.</param>
         /// <returns>True if this state is not null and currently on the stack, false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsActive(this GameState _state) {
             return (_state != null) && (_state.LifeState != GameState.Lifetime.Inactive);
         }

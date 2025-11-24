@@ -5,6 +5,7 @@
 // ================================================================================== //
 
 using EnhancedEditor;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 using AudioSettings = EnhancedFramework.Core.Settings.AudioSettings;
@@ -23,9 +24,10 @@ namespace EnhancedFramework.Core {
         /// <summary>
         /// Default minimum layer value.
         /// </summary>
-        [Separator(SeparatorPosition.Bottom)]
         [Ethereal]
         Default         = 0,
+
+        [Separator(SeparatorPosition.Top)]
 
         [DisplayName("Layer 1")]
         Layer_One       = 1,
@@ -86,10 +88,10 @@ namespace EnhancedFramework.Core {
         /// <br/> Only works during play mode.
         /// </summary>
         /// <inheritdoc cref="AudioSettings.NameToAudioLayer(string, out AudioLayer)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool NameToLayer(string _name, out AudioLayer _layer) {
             #if UNITY_EDITOR
             if (!Application.isPlaying) {
-
                 _layer = AudioLayer.Default;
                 return false;
             }
@@ -103,6 +105,7 @@ namespace EnhancedFramework.Core {
         /// <br/> Only works during play mode.
         /// </summary>
         /// <inheritdoc cref="AudioSettings.AudioLayerToName(AudioLayer)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string LayerToName(AudioLayer _layer) {
             #if UNITY_EDITOR
             if (!Application.isPlaying) {

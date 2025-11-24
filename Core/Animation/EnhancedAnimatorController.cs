@@ -13,8 +13,8 @@
 #endif
 
 using EnhancedEditor;
-using UnityEngine;
 using System;
+using UnityEngine;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -126,13 +126,19 @@ namespace EnhancedFramework.Core {
             }
 
             // Layers.
-            for (int i = 0; i < layers.Length; i++) {
-                layers[i].Initialize(i);
+            ref EnhancedAnimatorLayer[] _layerSpan = ref layers;
+            int _count = _layerSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _layerSpan[i].Initialize(i);
             }
 
             // Parameters.
-            for (int i = 0; i < parameters.Length; i++) {
-                parameters[i].Initialize(_animator);
+            ref EnhancedAnimatorParameter[] _parameterSpan = ref parameters;
+            _count = _parameterSpan.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _parameterSpan[i].Initialize(_animator);
             }
         }
 
@@ -147,8 +153,11 @@ namespace EnhancedFramework.Core {
         public void Register(Animator _animator) {
 
             // Parameters.
-            for (int i = 0; i < parameters.Length; i++) {
-                parameters[i].Register(_animator);
+            ref EnhancedAnimatorParameter[] _span = ref parameters;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Register(_animator);
             }
         }
 
@@ -159,8 +168,11 @@ namespace EnhancedFramework.Core {
         public void Unregister(Animator _animator) {
 
             // Parameters.
-            for (int i = 0; i < parameters.Length; i++) {
-                parameters[i].Unregister(_animator);
+            ref EnhancedAnimatorParameter[] _span = ref parameters;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Unregister(_animator);
             }
         }
         #endregion
@@ -175,8 +187,8 @@ namespace EnhancedFramework.Core {
 
         /// <inheritdoc cref="Play(Animator, int, int, bool)"/>
         public bool Play(Animator _animator, int _stateHash, bool _instant = false) {
-
-            for (int i = 0; i < layers.Length; i++) {
+            int _count = layers.Length;
+            for (int i = 0; i < _count; i++) {
 
                 if (Play(_animator, _stateHash, i, _instant)) {
                     return true;
@@ -195,7 +207,6 @@ namespace EnhancedFramework.Core {
         /// <param name="_instant">If true, instantly plays the animation.</param>
         /// <returns>True if the state could be successfully played, false otherwise.</returns>
         public bool Play(Animator _animator, int _stateHash, int _layerIndex, bool _instant = false) {
-
             if (_layerIndex >= layers.Length) {
                 return false;
             }
@@ -243,9 +254,7 @@ namespace EnhancedFramework.Core {
 
         /// <inheritdoc cref="SetDoc{T}(Animator, string, int, T)"/>
         public void SetBool(Animator _animator, int _parameterHash, bool _value) {
-
             if (GetParameter(_parameterHash, out EnhancedAnimatorParameter _parameter)) {
-
                 _parameter.SetBool(_animator, _value);
                 return;
             }
@@ -276,9 +285,7 @@ namespace EnhancedFramework.Core {
 
         /// <inheritdoc cref="SetDoc{T}(Animator, string, int, T)"/>
         public void SetInt(Animator _animator, int _parameterHash, int _value) {
-
             if (GetParameter(_parameterHash, out EnhancedAnimatorParameter _parameter)) {
-
                 _parameter.SetInt(_animator, _value);
                 return;
             }
@@ -309,9 +316,7 @@ namespace EnhancedFramework.Core {
 
         /// <inheritdoc cref="SetDoc{T}(Animator, string, int, T)"/>
         public void SetFloat(Animator _animator, int _parameterHash, float _value) {
-
             if (GetParameter(_parameterHash, out EnhancedAnimatorParameter _parameter)) {
-
                 _parameter.SetFloat(_animator, _value);
                 return;
             }
@@ -334,9 +339,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <inheritdoc cref="SetDoc{T}(Animator, string, int, T)"/>
         public void SetTrigger(Animator _animator, int _parameterHash) {
-
             if (GetParameter(_parameterHash, out EnhancedAnimatorParameter _parameter)) {
-
                 _parameter.SetTrigger(_animator);
                 return;
             }
@@ -355,9 +358,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <inheritdoc cref="SetDoc{T}(Animator, string, int, T)"/>
         public void ResetTrigger(Animator _animator, int _parameterHash) {
-
             if (GetParameter(_parameterHash, out EnhancedAnimatorParameter _parameter)) {
-
                 _parameter.ResetTrigger(_animator);
                 return;
             }
@@ -372,7 +373,6 @@ namespace EnhancedFramework.Core {
         /// <param name="_parameterName">Name of the parameter to get.</param>
         /// <inheritdoc cref="GetParameter(int, out EnhancedAnimatorParameter)"/>
         public bool GetParameter(string _parameterName, out EnhancedAnimatorParameter _parameter) {
-
             int _hash = Animator.StringToHash(_parameterName);
             return GetParameter(_parameterName, out _parameter);
         }
@@ -385,9 +385,11 @@ namespace EnhancedFramework.Core {
         /// <returns>True if an associated <see cref="EnhancedAnimatorParameter"/> could be found, false otherwise.</returns>
         public bool GetParameter(int _parameterHash, out EnhancedAnimatorParameter _parameter) {
 
-            for (int i = 0; i < parameters.Length; i++) {
+            ref EnhancedAnimatorParameter[] _span = ref parameters;
+            int _count = _span.Length;
 
-                _parameter = parameters[i];
+            for (int i = 0; i < _count; i++) {
+                _parameter = _span[i];
 
                 if (_parameter.Hash == _parameterHash) {
                     return true; 
@@ -503,7 +505,6 @@ namespace EnhancedFramework.Core {
             }
 
             AnimatorControllerParameter[] _parameters = _animator.parameters;
-
             for (int i = 0; i < parameters.Length; i++) {
                 parameters[i].Create(_animator, ref _parameters);
             }

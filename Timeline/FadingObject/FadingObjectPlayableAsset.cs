@@ -40,6 +40,10 @@ namespace EnhancedFramework.Timeline {
     /// <typeparam name="T">The <see cref="EnhancedPlayableBehaviour"/> playable for this asset.</typeparam>
     public abstract class FadingObjectFadePlayableAsset<T> : EnhancedPlayableAsset<T, FadingObjectBehaviour>, IFadingObjectPlayableAsset, IPropertyPreview
                                                              where T : FadingObjectFadePlayableBehaviour, new() {
+        #region Global Members
+        public const string NamePrefix = "Fading Object/";
+        #endregion
+
         #region Behaviour
         public void GatherProperties(PlayableDirector _director, IPropertyCollector _driver) {
 
@@ -100,8 +104,8 @@ namespace EnhancedFramework.Timeline {
 
         #region Behaviour
         // Cache.
-        private bool fromVisibility = false;
         private bool hasFromVisibility = false;
+        private bool fromVisibility    = false;
 
         // -----------------------
 
@@ -122,7 +126,6 @@ namespace EnhancedFramework.Timeline {
             base.ProcessFrame(_playable, _info, _playerData);
 
             IFadingObject _object = FadingObject;
-
             if (_object == null) {
                 return;
             }
@@ -134,7 +137,7 @@ namespace EnhancedFramework.Timeline {
 
             if ((_time < _startDuration) && (fromVisibility != EnterVisibility)) {
 
-                FadingObject.Evaluate(_time, EnterVisibility);
+                _object.Evaluate(_time, EnterVisibility);
                 return;
             }
 
@@ -144,7 +147,7 @@ namespace EnhancedFramework.Timeline {
 
             if ((_time > _endStart) && (EnterVisibility != ExitVisibility)) {
 
-                FadingObject.Evaluate(_time - _endStart, ExitVisibility);
+                _object.Evaluate(_time - _endStart, ExitVisibility);
                 return;
             }
 

@@ -62,10 +62,6 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Enhanced Behaviour
-        private const float SplashDelay = .5f;
-
-        // -----------------------
-
         protected override void OnBehaviourEnabled() {
             base.OnBehaviourEnabled();
 
@@ -75,14 +71,7 @@ namespace EnhancedFramework.Core {
 
         protected override void OnPlay() {
             base.OnPlay();
-
-            Delayer.Call(SplashDelay, OnComplete, true);
-
-            // ----- Local Method ----- \\
-
-            void OnComplete() {
-                StartCoroutine(PlaySplash());
-            }
+            StartCoroutine(PlaySplash());
         }
 
         protected override void OnBehaviourDisabled() {
@@ -101,15 +90,15 @@ namespace EnhancedFramework.Core {
         private void OnBundleLoaded(SceneBundle _bundle) {
             // Get this splash scene.
             if (_bundle.ContainScene(gameObject.scene, out _)) {
-                splashBundle = _bundle;
 
+                splashBundle = _bundle;
                 EnhancedSceneManager.OnPostLoadBundle -= OnBundleLoaded;
             }
         }
         #endregion
 
         #region Behaviour
-        private const float TimeBeforeSplash = .1f;
+        private const float TimeBeforeSplash = .6f;
         private GameState gameState = null;
 
         // -----------------------
@@ -127,9 +116,11 @@ namespace EnhancedFramework.Core {
             EnhancedSceneManager.Instance.LoadSceneBundle(nextScene, LoadSceneMode.Additive);
 
             // Play each animation.
-            for (int i = 0; i < animations.Length; i++) {
-                SplashAnimation _animation = animations[i];
-                yield return _animation.Play();
+            var _animations = animations;
+            int _count = _animations.Length;
+
+            for (int i = 0; i < _count; i++) {
+                yield return _animations[i].Value.Play();
             }
 
             isPlaying = false;

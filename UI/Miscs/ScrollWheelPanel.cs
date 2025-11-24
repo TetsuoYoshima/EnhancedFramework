@@ -45,8 +45,10 @@ namespace EnhancedFramework.UI {
 
         #region Event
         void IScrollHandler.OnScroll(PointerEventData _data) {
-            scroll.value = Mathf.Clamp(scroll.value + (scroll.size * sensitivity * _data.scrollDelta.y), 0f, 1f);
-            scroll.Rebuild(CanvasUpdate.Layout);
+            Scrollbar _scroll = scroll;
+
+            _scroll.value = Mathf.Clamp(_scroll.value + (_scroll.size * sensitivity * _data.scrollDelta.y), 0f, 1f);
+            _scroll.Rebuild(CanvasUpdate.Layout);
         }
         #endregion
     }

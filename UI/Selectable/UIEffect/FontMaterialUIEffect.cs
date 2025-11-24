@@ -14,10 +14,10 @@ namespace EnhancedFramework.UI {
     /// Set the font material of the button text.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Font Material UI Effect"), DisallowMultipleComponent]
+    [AddComponentMenu(MenuPath + "Font Material [UI Effect]"), DisallowMultipleComponent]
     public sealed class FontMaterialUIEffect : EnhancedSelectableEffect {
         #region Global Members
-        [Section("Font Material Effect")]
+        [Section("Font Material [UI Effect]")]
 
         [SerializeField, Enhanced, Required] private TextMeshProUGUI text = null;
 

@@ -19,7 +19,6 @@ namespace EnhancedFramework.Core {
         #region Enhanced Behaviour
         protected override void OnInit() {
             base.OnInit();
-
             Disable();
         }
         #endregion

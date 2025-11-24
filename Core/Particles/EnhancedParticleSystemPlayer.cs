@@ -20,7 +20,7 @@ namespace EnhancedFramework.Core {
 
         // -----------------------
 
-        public int ID {
+        public readonly int ID {
             get { return handler.ID; }
         }
 
@@ -100,6 +100,7 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public enum State {
             Inactive    = 0,
+
             Playing     = 1,
             Paused      = 2,
 
@@ -199,16 +200,19 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public float Time {
             get {
+                ref ParticleSystem[] _span = ref particleSystems;
                 float _time = 0f;
-                for (int i = 0; i < particleSystems.Length; i++) {
-                    _time = Mathf.Max(_time, particleSystems[i].time);
+
+                for (int i = _span.Length; i-- > 0;) {
+                    _time = Mathf.Max(_time, _span[i].time);
                 }
 
                 return _time;
             }
             set {
-                for (int i = 0; i < particleSystems.Length; i++) {
-                    particleSystems[i].time = value;
+                ref ParticleSystem[] _span = ref particleSystems;
+                for (int i = _span.Length; i-- > 0;) {
+                    _span[i].time = value;
                 }
             }
         }
@@ -225,9 +229,11 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public float Duration {
             get {
+                ref ParticleSystem[] _span = ref particleSystems;
                 float _duration = 0f;
-                for (int i = 0; i < particleSystems.Length; i++) {
-                    _duration = Mathf.Max(_duration, particleSystems[i].main.duration);
+
+                for (int i = _span.Length; i-- > 0;) {
+                    _duration = Mathf.Max(_duration, _span[i].main.duration);
                 }
 
                 return _duration;
@@ -239,8 +245,10 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public bool IsParticlePlaying {
             get {
-                for (int i = 0; i < particleSystems.Length; i++) {
-                    if (particleSystems[i].isPlaying) {
+                ref ParticleSystem[] _span = ref particleSystems;
+                for (int i = _span.Length; i-- > 0;) {
+
+                    if (_span[i].isPlaying) {
                         return true;
                     }
                 }
@@ -279,10 +287,12 @@ namespace EnhancedFramework.Core {
                 // Stop detection.
                 case State.Playing:
 
+                    ref ParticleSystem[] _span = ref particleSystems;
                     bool _isAlive = false;
 
-                    for (int i = 0; i < particleSystems.Length; i++) {
-                        if (particleSystems[i].IsAlive()) {
+                    for (int i = _span.Length; i-- > 0;) {
+
+                        if (_span[i].IsAlive()) {
                             _isAlive = true;
                             break;
                         }
@@ -391,8 +401,11 @@ namespace EnhancedFramework.Core {
                 // Play.
                 SetState(State.Playing);
 
-                for (int i = 0; i < particleSystems.Length; i++) {
-                    particleSystems[i].Play(false);
+                ref ParticleSystem[] _span = ref particleSystems;
+                int _count = _span.Length;
+
+                for (int i = 0; i < _count; i++) {
+                    _span[i].Play(false);
                 }
             }
         }
@@ -439,8 +452,11 @@ namespace EnhancedFramework.Core {
                 case State.Paused:
                     SetState(State.Playing);
 
-                    for (int i = 0; i < particleSystems.Length; i++) {
-                        particleSystems[i].Play(false);
+                    ref ParticleSystem[] _span = ref particleSystems;
+                    int _count = _span.Length;
+
+                    for (int i = 0; i < _count; i++) {
+                        _span[i].Play(false);
                     }
                     break;
 
@@ -485,8 +501,11 @@ namespace EnhancedFramework.Core {
             // Pause.
             SetState(State.Paused);
 
-            for (int i = 0; i < particleSystems.Length; i++) {
-                particleSystems[i].Pause(false);
+            ref ParticleSystem[] _span = ref particleSystems;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Pause(false);
             }
 
             return true;
@@ -517,8 +536,11 @@ namespace EnhancedFramework.Core {
                     break;
             }
 
-            for (int i = 0; i < particleSystems.Length; i++) {
-                particleSystems[i].Stop(false, _behaviour);
+            ref ParticleSystem[] _span = ref particleSystems;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                _span[i].Stop(false, _behaviour);
             }
 
             switch (_behaviour) {
@@ -583,8 +605,8 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_transform"><see cref="Transform"/> reference to follow.</param>
         public void FollowTransform(Transform _transform) {
-            followTransform = true;
             referenceTransform = _transform;
+            followTransform    = true;
 
             UpdateFollow();
         }
@@ -593,18 +615,26 @@ namespace EnhancedFramework.Core {
         /// Stops following any reference <see cref="Transform"/>.
         /// </summary>
         public void StopFollowTransform() {
-            followTransform = false;
             referenceTransform = null;
+            followTransform    = false;
+        }
+
+        /// <summary>
+        /// Get the reference <see cref="Transform"/> that this player follows.
+        /// </summary>
+        public bool GetFollowTransform(out Transform _transform) {
+            _transform = referenceTransform;
+            return followTransform;
         }
 
         /// <summary>
         /// Updates this player to follow its reference transform.
         /// </summary>
         private void UpdateFollow() {
-            if (followTransform) {
+            if (GetFollowTransform(out Transform _transform)) {
 
                 try {
-                    transform.SetPositionAndRotation(referenceTransform.position, referenceTransform.rotation);
+                    transform.SetPositionAndRotation(_transform.position, _transform.rotation);
                 } catch (MissingReferenceException e) {
                     this.LogException(e);
                     StopFollowTransform();

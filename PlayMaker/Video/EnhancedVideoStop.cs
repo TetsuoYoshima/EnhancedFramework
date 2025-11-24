@@ -41,7 +41,9 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void Stop() {
             if (Video.Value is EnhancedVideoPlayer _video) {

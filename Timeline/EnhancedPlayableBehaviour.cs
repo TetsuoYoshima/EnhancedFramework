@@ -18,8 +18,8 @@ namespace EnhancedFramework.Timeline {
 	public enum PlayableState {
 		Inactive = 0,
 
-		Playing,
-		Paused,
+		Playing  = 1,
+		Paused   = 2,
 	}
 
     /// <summary>

@@ -46,19 +46,27 @@ namespace EnhancedFramework.PlayMaker {
             Finish();
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Behaviour
+        // -------------------------------------------
 
         private void Stop() {
             // Assets.
-            for (int i = 0; i < AssetFeedbacks.Length; i++) {
-                if (AssetFeedbacks.Get(i) is EnhancedAssetFeedback _feedback) {
+            ref FsmArray _span = ref AssetFeedbacks;
+            int _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                if (_span.Get(i) is EnhancedAssetFeedback _feedback) {
                     _feedback.StopSafe();
                 }
             }
 
             // Scene.
-            for (int i = 0; i < SceneFeedbacks.Length; i++) {
-                if (SceneFeedbacks.Get(i) is EnhancedSceneFeedback _feedback) {
+            _span  = ref SceneFeedbacks;
+            _count = _span.Length;
+
+            for (int i = 0; i < _count; i++) {
+                if (_span.Get(i) is EnhancedSceneFeedback _feedback) {
                     _feedback.StopSafe();
                 }
             }

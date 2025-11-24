@@ -15,10 +15,10 @@ namespace EnhancedFramework.UI {
     /// <see cref="FadingGroupEffect"/> modifying the size of a <see cref="RectTransform"/> according to a source <see cref="FadingGroup"/> visibility.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Size - Fading Group Effect")]
+    [AddComponentMenu(MenuPath + "Size [Fading Group Effect]")]
     public sealed class SizeFadingGroupEffect : FadingGroupEffect {
         #region Global Members
-        [Section("Size Effect"), PropertyOrder(0)]
+        [Section("Size [Fading Group Effect]"), PropertyOrder(0)]
 
         [Tooltip("RectTransform to modify the size on group visibility")]
         [SerializeField, Enhanced, Required] private RectTransform rectTransform = null;
@@ -37,9 +37,7 @@ namespace EnhancedFramework.UI {
         #region Enhanced Behaviour
         protected override void OnBehaviourDisabled() {
             base.OnBehaviourDisabled();
-
-            // Stop.
-            sequence.DoKill();
+            Stop();
         }
 
         #if UNITY_EDITOR
@@ -92,6 +90,10 @@ namespace EnhancedFramework.UI {
             void OnKilled() {
                 sequence = null;
             }
+        }
+
+        private void Stop() {
+            sequence.Kill();
         }
         #endregion
     }

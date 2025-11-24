@@ -24,23 +24,22 @@ namespace EnhancedFramework.Core {
         [SerializeField] private LayerMask detectionMask = new LayerMask();
         #endregion
 
-        #region Enhanced Behaviour
+        #region Trigger
         private void OnTriggerEnter(Collider _collider) {
 
             // Don't inherit from the ITrigger interface or EnhancedTrigger component
             // to avoid catching every target object without requiring to setup any script on it.
-
             if (_collider.isTrigger || !detectionMask.Contains(_collider.gameObject.layer)) {
                 return;
             }
 
             // Teleport.
-            _collider.transform.SetPositionAndRotation(destination.position, destination.rotation);
+            Transform _destination = destination;
+            _collider.transform.SetPositionAndRotation(_destination.position, _destination.rotation);
 
             if (_collider.TryGetComponent(out Rigidbody _rigidbody)) {
-
-                _rigidbody.position = destination.position;
-                _rigidbody.rotation = destination.rotation;
+                _rigidbody.position = _destination.position;
+                _rigidbody.rotation = _destination.rotation;
             }
         }
         #endregion

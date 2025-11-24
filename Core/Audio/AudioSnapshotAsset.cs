@@ -25,10 +25,10 @@ namespace EnhancedFramework.Core {
 
         [Space(10f)]
 
-        [Tooltip("Default weight of this snapshot. 1 means fully active, 0 for inactive")]
+        [Tooltip("Default weight of this snapshot - 1 means fully active, 0 for inactive")]
         [SerializeField, Enhanced, Range(0f, 1f)] private float weight = 1f;
 
-        [Tooltip("Default priority of this snapshot. Used th blend snapshots when multiple are active")]
+        [Tooltip("Default priority of this snapshot - used th blend snapshots when multiple are active")]
         [SerializeField, Enhanced, Range(0f, 99f)] private int priority = 0;
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]

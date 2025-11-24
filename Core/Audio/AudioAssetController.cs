@@ -35,31 +35,34 @@ namespace EnhancedFramework.Core {
 
         [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
 
-        [Tooltip("Settings used to play this audio")]
-        [SerializeField, Enhanced, ShowIf(nameof(overrideSettings)), Range(0f, 99f)] private AudioAssetSettings settings = null;
+        [Tooltip("Audio loop override")]
+        [SerializeField] private LoopOverride loopOverride = LoopOverride.None;
 
         [Tooltip("If true, overrides the default settings of this audio")]
         [SerializeField] private bool overrideSettings = false;
 
-        [Tooltip("Audio loop override")]
-        [SerializeField] private LoopOverride loopOverride = LoopOverride.None;
+        [Tooltip("Settings used to play this audio")]
+        [SerializeField, Enhanced, ShowIf(nameof(overrideSettings)), Range(0f, 99f)] private AudioAssetSettings settings = null;
         #endregion
 
         #region Behaviour
         private const float TweenVolumeDuration = .1f;
+        private List<AudioHandler> handlers = new List<AudioHandler>();
 
-        private readonly List<AudioHandler> handlers = new List<AudioHandler>();
-
-        // -----------------------
+        // -------------------------------------------
+        // Activation
+        // -------------------------------------------
 
         protected override void OnActivation() {
             // Play audios.
             Transform _transform = transform;
 
-            int _count = playAudios.Count;
+            ref List<AudioAsset> _span = ref playAudios;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                AudioAsset _audio = playAudios[i];
+                AudioAsset   _audio   = _span[i];
                 AudioHandler _handler = AudioManager.Instance.Play(_audio, GetSettings(_audio), _transform);
                 handlers.Add(_handler);
 
@@ -80,22 +83,25 @@ namespace EnhancedFramework.Core {
             base.OnDeactivation();
 
             bool _active = isActiveAndEnabled;
-            int _count;
 
             // Stop fade out.
-            _count = fadeOutAudios.Count;
+            ref List<AudioAsset> _span = ref fadeOutAudios;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                if (fadeOutAudios[i].GetHandler(out AudioHandler _handler) && _handler.GetHandle(out EnhancedAudioPlayer _player)) {
+                if (_span[i].GetHandler(out AudioHandler _handler) && _handler.GetHandle(out EnhancedAudioPlayer _player)) {
                     _player.PopVolumeModifier(AudioPlayerModifier.ControllerFadeOut);
                 }
             }
 
             // Stop audios.
-            _count = handlers.Count;
+            ref List<AudioHandler> _handlerSpan = ref handlers;
+            _count = _handlerSpan.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                AudioHandler _handler = handlers[i];
+                AudioHandler _handler = _handlerSpan[i];
                 _handler.Stop();
 
                 // In case object is being destroyed.
@@ -104,7 +110,7 @@ namespace EnhancedFramework.Core {
                 }
             }
 
-            handlers.Clear();
+            _handlerSpan.Clear();
         }
 
         // -------------------------------------------
@@ -120,10 +126,12 @@ namespace EnhancedFramework.Core {
             // Fade out.
             _weight = 1f - (_weight * fadeOutWeightCoef);
 
-            int _count = fadeOutAudios.Count;
+            ref List<AudioAsset> _span = ref fadeOutAudios;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                if (fadeOutAudios[i].GetHandler(out AudioHandler _handler) && _handler.GetHandle(out EnhancedAudioPlayer _player)) {
+                if (_span[i].GetHandler(out AudioHandler _handler) && _handler.GetHandle(out EnhancedAudioPlayer _player)) {
                     _player.TweenVolumeModifier(AudioPlayerModifier.ControllerFadeOut, _weight, TweenVolumeDuration);
                 }
             }
@@ -137,10 +145,12 @@ namespace EnhancedFramework.Core {
         /// <param name="_tweenDuration">Duration of the modifier transition (in seconds).</param>
         public void SetVolume(AudioPlayerModifier _modifier, float _volume, float _tweenDuration) {
 
-            int _count = handlers.Count;
+            ref List<AudioHandler> _span = ref handlers;
+            int _count = _span.Count;
+
             for (int i = 0; i < _count; i++) {
 
-                if (handlers[i].GetHandle(out EnhancedAudioPlayer _player)) {
+                if (_span[i].GetHandle(out EnhancedAudioPlayer _player)) {
                     _player.TweenVolumeModifier(_modifier, _volume, _tweenDuration);
                 }
             }

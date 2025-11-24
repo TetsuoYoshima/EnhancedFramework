@@ -26,7 +26,7 @@ namespace EnhancedFramework.Core {
 
         // -----------------------
 
-        public int ID {
+        public readonly int ID {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return handler.ID; }
         }
@@ -127,11 +127,11 @@ namespace EnhancedFramework.Core {
         #endregion
 
         #region Global Members
-        private int id = 0;
         private State state = State.Inactive;
+        private int id      = 0;
 
-        private float delay = 0f;
         private bool useRealTime = true;
+        private float delay      = 0f;
 
         /// <summary>
         /// Callback delay within this object.
@@ -181,9 +181,9 @@ namespace EnhancedFramework.Core {
             // Prepare.
             SetState(State.Active);
 
-            delay = _delay;
             useRealTime = _realTime;
-            OnComplete = _callback;
+            OnComplete  = _callback;
+            delay       = _delay;
 
             id = ++lastID;
             return new DelayHandler(this, id);
@@ -237,14 +237,14 @@ namespace EnhancedFramework.Core {
         // Utility
         // -------------------------------------------
 
-        internal bool Update(float deltaTime, float realDeltaTime) {
+        internal bool Update(float _deltaTime, float _realDeltaTime) {
 
             // Ignore if not active.
             if (state != State.Active) {
                 return false;
             }
 
-            delay -= useRealTime ? realDeltaTime : deltaTime;
+            delay -= useRealTime ? _realDeltaTime : _deltaTime;
 
             // Complete.
             if (delay <= 0f) {
@@ -299,6 +299,8 @@ namespace EnhancedFramework.Core {
         #endregion
     }
 
+    // ===== Delayer ===== \\
+
     /// <summary>
     /// Utility class used to dynamically delay a specific method call.
     /// </summary>
@@ -307,18 +309,17 @@ namespace EnhancedFramework.Core {
     #endif
     public sealed class Delayer : IObjectPoolManager<DelayedCall>, IStableUpdate {
         #region Global Members
-        public Object LogObject {
-            get { return GameManager.Instance; }
-        }
-
-        public int InstanceID { get; set; } = EnhancedUtility.GenerateGUID();
-
         /// <summary>
         /// Static singleton instance.
         /// </summary>
         private static readonly Delayer instance = new Delayer();
-
         private static bool isInitialized = false;
+
+        public int InstanceID { get; set; } = EnhancedUtility.GenerateGUID();
+
+        public Object LogObject {
+            get { return GameManager.Instance; }
+        }
 
         // -------------------------------------------
         // Initialization
@@ -339,6 +340,10 @@ namespace EnhancedFramework.Core {
         }
 
         #if UNITY_EDITOR
+        // -------------------------------------------
+        // Editor
+        // -------------------------------------------
+
         // Editor constructor.
         static Delayer() {
 
@@ -383,23 +388,25 @@ namespace EnhancedFramework.Core {
         /// Cancels all registered <see cref="DelayedCall"/>.
         /// </summary>
         public static void CancelAllDelayedCalls() {
-            ref var _callSpan = ref calls.collection;
+            ref List<DelayedCall> _callSpan = ref calls.collection;
             for (var i = _callSpan.Count; i-- > 0;) {
                 _callSpan[i].Cancel();
             }
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Update
+        // -------------------------------------------
 
         public void Update() {
-            ref  List<DelayedCall> _callSpan = ref calls.collection;
-            int _count = _callSpan.Count;
+            ref List<DelayedCall> _span = ref calls.collection;
+            int _count = _span.Count;
 
             if (_count == 0)
                 return;
 
-            float realDeltaTime = ChronosUtility.RealDeltaTime;
-            float deltaTime     = ChronosUtility.DeltaTime;
+            float _realDeltaTime = ChronosUtility.RealDeltaTime;
+            float _deltaTime     = ChronosUtility.DeltaTime;
 
             requireRefresh = false;
 
@@ -408,13 +415,13 @@ namespace EnhancedFramework.Core {
 
                 // Index management.
                 try {
-                    if (_callSpan[i].Update(deltaTime, realDeltaTime) || requireRefresh) {
+                    if (_span[i].Update(_deltaTime, _realDeltaTime) || requireRefresh) {
 
-                        i = Mathf.Min(i, _callSpan.Count);
+                        i = Mathf.Min(i, _span.Count);
                         requireRefresh = false;
                     }
                 } catch (ArgumentOutOfRangeException) {
-                    i = Mathf.Min(i, _callSpan.Count);
+                    i = Mathf.Min(i, _span.Count);
                 }
             }
 
@@ -432,7 +439,6 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <inheritdoc cref="ObjectPool{T}.GetPoolInstance"/>
         private static DelayedCall GetCall() {
-
             Initialize();
             return pool.GetPoolInstance();
         }

@@ -23,7 +23,7 @@ namespace EnhancedFramework.UI {
     /// Fades a specific <see cref="Graphic"/> color.
     /// </summary>
     [ScriptGizmos(false, true)]
-    [AddComponentMenu(MenuPath + "Color UI Effect"), DisallowMultipleComponent]
+    [AddComponentMenu(MenuPath + "Color [UI Effect]"), DisallowMultipleComponent]
     #pragma warning disable
     public sealed class ColorUIEffect : EnhancedSelectableEffect {
         #region Color
@@ -39,9 +39,9 @@ namespace EnhancedFramework.UI {
         #endregion
 
         #region Global Members
-        [Section("Color Effect")]
+        [Section("Color [UI Effect]")]
 
-        [SerializeField] private Graphic graphic = null;
+        [SerializeField] private Graphic graphic  = null;
         [SerializeField] private bool useRealTime = false;
 
         [Space(5f)]
@@ -62,7 +62,7 @@ namespace EnhancedFramework.UI {
             // Fade.
             tween.DoKill();
 
-            var _color = color[_state];
+            ColorFade _color = color[_state];
 
             if (_instant || (_color.Duration == 0f)) {
 

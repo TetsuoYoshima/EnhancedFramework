@@ -8,6 +8,7 @@ using EnhancedEditor;
 using EnhancedFramework.Core;
 using EnhancedFramework.Core.GameStates;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace EnhancedFramework.UI {
@@ -46,6 +47,13 @@ namespace EnhancedFramework.UI {
         #region Buffer
         private static readonly Set<int> visibilityBuffer = new Set<int>();
 
+        private Action<bool> onFadeBufferShow = null;
+        private Action onFadeBufferWait = null;
+
+        private Action<bool> onFadeBufferCompleteCallback = null;
+        private Action onFadeBufferBeforeFadeOutCallback  = null;
+        private Action onFadeBufferAfterFadeInCallback    = null;
+
         // -----------------------
 
         /// <summary>
@@ -54,8 +62,7 @@ namespace EnhancedFramework.UI {
         /// </summary>
         /// <param name="_id">This operation identifier to push in buffer.</param>
         /// <inheritdoc cref="FadingObjectSingleton{T}.Show(bool, Action)"/>
-        public void ShowBuffer(int _id, bool _instant = false, Action _onComplete = null) {
-
+        public void ShowBuffer(int _id, bool _instant = false, Action<bool> _onComplete = null) {
             visibilityBuffer.Add(_id);
             base.Show(_instant, _onComplete);
         }
@@ -66,14 +73,13 @@ namespace EnhancedFramework.UI {
         /// </summary>
         /// <param name="_id">This operation identifier to pop from the buffer.</param>
         /// <inheritdoc cref="FadingObjectSingleton{T}.Hide(bool, Action)"/>
-        public void HideBuffer(int _id, bool _instant = false, Action _onComplete = null) {
-
+        public void HideBuffer(int _id, bool _instant = false, Action<bool> _onComplete = null) {
             visibilityBuffer.Remove(_id);
 
             if (visibilityBuffer.Count == 0) {
                 base.Hide(_instant, _onComplete);
             } else {
-                _onComplete?.Invoke();
+                _onComplete?.Invoke(true);
             }
         }
 
@@ -82,8 +88,7 @@ namespace EnhancedFramework.UI {
         /// </summary>
         /// <param name="_id">This operation identifier to manage in buffer.</param>
         /// <inheritdoc cref="FadingObjectSingleton{T}.SetVisibility(bool, bool, Action)"/>
-        public void SetVisibilityBuffer(int _id, bool _isVisible, bool _instant = false, Action _onComplete = null) {
-
+        public void SetVisibilityBuffer(int _id, bool _isVisible, bool _instant = false, Action<bool> _onComplete = null) {
             if (_isVisible) {
                 ShowBuffer(_id, _instant, _onComplete);
             } else {
@@ -96,7 +101,7 @@ namespace EnhancedFramework.UI {
         /// </summary>
         /// <param name="_id">This operation identifier to manage in buffer.</param>
         /// <inheritdoc cref="FadingObjectSingleton{T}.Fade(FadingMode, bool, Action, float)"/>
-        public void FadeBuffer(int _id, FadingMode _mode, bool _isInstant, Action _onComplete = null, float _inOutWaitDuration = .5f) {
+        public void FadeBuffer(int _id, FadingMode _mode, bool _isInstant, Action<bool> _onComplete = null, float _inOutWaitDuration = .5f) {
 
             switch (_mode) {
                 case FadingMode.Show:
@@ -127,19 +132,29 @@ namespace EnhancedFramework.UI {
         /// </summary>
         /// <param name="_id">This operation identifier to manage in buffer.</param>
         /// <inheritdoc cref="FadingObjectSingleton{T}.FadeInOut(float, Action, Action, Action)"/>
-        public void FadeInOutBuffer(int _id, float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action _onComplete = null) {
-            ShowBuffer(_id, false, OnShow);
+        public void FadeInOutBuffer(int _id, float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action<bool> _onComplete = null) {
+
+            CancelCurrentFade();
+
+            onFadeBufferBeforeFadeOutCallback = _onBeforeFadeOut;
+            onFadeBufferAfterFadeInCallback   = _onAfterFadeIn;
+            onFadeBufferCompleteCallback      = _onComplete;
+
+            onFadeBufferShow ??= OnShow;
+            ShowBuffer(_id, false, onFadeBufferShow);
 
             // ----- Local Methods ----- \\
 
-            void OnShow() {
-                _onAfterFadeIn?.Invoke();
-                Delayer.Call(_duration, OnWaitComplete, true);
+            void OnShow(bool _completed) {
+                onFadeBufferAfterFadeInCallback?.Invoke();
+
+                onFadeBufferWait ??= OnWaitComplete;
+                Delayer.Call(_duration, onFadeBufferWait, true);
             }
 
             void OnWaitComplete() {
-                _onBeforeFadeOut?.Invoke();
-                HideBuffer(_id, false, _onComplete);
+                onFadeBufferBeforeFadeOutCallback?.Invoke();
+                HideBuffer(_id, false, onFadeBufferCompleteCallback);
             }
         }
 
@@ -147,7 +162,7 @@ namespace EnhancedFramework.UI {
         /// Clears this buffer content and hide the black bars.
         /// </summary>
         /// <inheritdoc cref="FadingObjectSingleton{T}.Hide(bool, Action)"/>
-        public void ClearBuffer(bool _instant, Action _onComplete = null) {
+        public void ClearBuffer(bool _instant, Action<bool> _onComplete = null) {
             visibilityBuffer.Clear();
             base.Hide(_instant, _onComplete);
         }
@@ -160,27 +175,27 @@ namespace EnhancedFramework.UI {
         // General
         // -------------------------------------------
 
-        public override void Show(Action _onComplete = null) {
+        public override void Show(Action<bool> _onComplete = null) {
             Show(false, _onComplete);
         }
 
-        public override void Hide(Action _onComplete = null) {
+        public override void Hide(Action<bool> _onComplete = null) {
             Hide(false, _onComplete);
         }
 
-        public override void FadeInOut(float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action _onComplete = null) {
+        public override void FadeInOut(float _duration, Action _onAfterFadeIn = null, Action _onBeforeFadeOut = null, Action<bool> _onComplete = null) {
             FadeInOutBuffer(DefaultID, _duration, _onAfterFadeIn, _onBeforeFadeOut, _onComplete);
         }
 
-        public override void Fade(FadingMode _mode, Action _onComplete = null, float _inOutWaitDuration = .5f) {
+        public override void Fade(FadingMode _mode, Action<bool> _onComplete = null, float _inOutWaitDuration = .5f) {
             Fade(_mode, false, _onComplete, _inOutWaitDuration);
         }
 
-        public override void Invert(Action _onComplete = null) {
+        public override void Invert(Action<bool> _onComplete = null) {
             Invert(false, _onComplete);
         }
 
-        public override void SetVisibility(bool _isVisible, Action _onComplete = null) {
+        public override void SetVisibility(bool _isVisible, Action<bool> _onComplete = null) {
             SetVisibility(_isVisible, false, _onComplete);
         }
 
@@ -188,20 +203,19 @@ namespace EnhancedFramework.UI {
         // Instant
         // -------------------------------------------
 
-        public override void Show(bool _isInstant, Action _onComplete = null) {
+        public override void Show(bool _isInstant, Action<bool> _onComplete = null) {
             ShowBuffer(DefaultID, _isInstant, _onComplete);
         }
 
-        public override void Hide(bool _isInstant, Action _onComplete = null) {
+        public override void Hide(bool _isInstant, Action<bool> _onComplete = null) {
             HideBuffer(DefaultID, _isInstant, _onComplete);
         }
 
-        public override void Fade(FadingMode _mode, bool _isInstant, Action _onComplete = null, float _inOutWaitDuration = .5f) {
+        public override void Fade(FadingMode _mode, bool _isInstant, Action<bool> _onComplete = null, float _inOutWaitDuration = .5f) {
             FadeBuffer(DefaultID, _mode, _isInstant, _onComplete, _inOutWaitDuration);
         }
 
-        public override void Invert(bool _isInstant, Action _onComplete = null) {
-
+        public override void Invert(bool _isInstant, Action<bool> _onComplete = null) {
             if (IsVisible) {
                 HideBuffer(DefaultID, _isInstant, _onComplete);
             } else {
@@ -209,7 +223,7 @@ namespace EnhancedFramework.UI {
             }
         }
 
-        public override void SetVisibility(bool _isVisible, bool _isInstant, Action _onComplete = null) {
+        public override void SetVisibility(bool _isVisible, bool _isInstant, Action<bool> _onComplete = null) {
             SetVisibilityBuffer(DefaultID, _isVisible, false, _onComplete);
         }
 
@@ -219,7 +233,10 @@ namespace EnhancedFramework.UI {
 
         public override void Evaluate(float _time, bool _show) {
 
-            if ((visibilityBuffer.Count > 1) || ((visibilityBuffer.Count == 1) && (visibilityBuffer[0] != DefaultID))) {
+            ref List<int> _span = ref visibilityBuffer.collection;
+            int _count = _span.Count;
+
+            if ((_count > 1) || ((_count == 1) && (_span[0] != DefaultID))) {
                 return;
             }
 
@@ -228,7 +245,10 @@ namespace EnhancedFramework.UI {
 
         public override void SetFadeValue(float _value, bool _show) {
 
-            if ((visibilityBuffer.Count > 1) || ((visibilityBuffer.Count == 1) && (visibilityBuffer[0] != DefaultID))) {
+            ref List<int> _span = ref visibilityBuffer.collection;
+            int _count = _span.Count;
+
+            if ((_count > 1) || ((_count == 1) && (_span[0] != DefaultID))) {
                 return;
             }
 

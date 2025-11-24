@@ -13,7 +13,7 @@ namespace EnhancedFramework.Core.GameStates {
     /// <see cref="GameState"/> automatically pushed on the stack when the application is being quit.
     /// </summary>
     [Serializable, Ethereal, DisplayName("Quit")]
-    public class QuitGameState : GameState {
+    public sealed class QuitGameState : GameState {
         #region Global Members
         /// <summary>
         /// Make sure this state is behind all other gameplay states,

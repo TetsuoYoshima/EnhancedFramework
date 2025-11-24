@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace EnhancedFramework.Core {
+    // ===== Base ===== \\
+
     /// <summary>
     /// Buffer used to push and pop values according to a priority system.
     /// <para/>
@@ -230,6 +232,8 @@ namespace EnhancedFramework.Core {
         }
         #endregion
     }
+
+    // ===== Derived ===== \\
 
     /// <summary>
     /// <inheritdoc cref="Buffer{T, U, V}"/>

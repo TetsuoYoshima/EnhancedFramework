@@ -6,6 +6,7 @@
 
 using EnhancedEditor;
 using System;
+using System.Collections.Generic;
 
 namespace EnhancedFramework.Core {
     /// <summary>
@@ -217,11 +218,12 @@ namespace EnhancedFramework.Core {
         /// </summary>
         internal void Reset() {
 
-            for (int i = Count; i-- > 0;) {
-                Actors[i].ExitTrigger(Trigger);
+            ref List<ITriggerActor> _span = ref Actors.collection;
+            for (int i = _span.Count; i-- > 0;) {
+                _span[i].ExitTrigger(Trigger);
             }
 
-            Actors.Clear();
+            _span.Clear();
             Trigger = null;
         }
         #endregion
@@ -247,6 +249,10 @@ namespace EnhancedFramework.Core {
 
         private static readonly ObjectPool<TriggerInfo> pool        = new ObjectPool<TriggerInfo>(PoolCapacity); // Must be before Instance field for a correct initialization.
         public  static readonly EnhancedTriggerInfoManager Instance = new EnhancedTriggerInfoManager();
+
+        // -------------------------------------------
+        // Constructor(s)
+        // -------------------------------------------
 
         /// <inheritdoc cref="EnhancedTriggerInfoManager"/>
         private EnhancedTriggerInfoManager() {

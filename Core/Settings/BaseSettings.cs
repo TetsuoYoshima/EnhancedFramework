@@ -56,37 +56,10 @@ namespace EnhancedFramework.Core.Settings {
     /// Base class to inherit all game database from.
     /// </summary>
     /// <typeparam name="T">This class type.</typeparam>
-    public abstract class BaseDatabase<T> : ScriptableSettings where T : BaseDatabase<T> {
+    public abstract class BaseDatabase<T> : BaseSettings<T> where T : BaseDatabase<T> {
         #region Content
-        public const string MenuPrefix  = "DT_";
-        public const string MenuPath    = FrameworkUtility.MenuPath + "Game Database/";
-        public const int MenuOrder      = FrameworkUtility.MenuOrder;
-
-        private static T database = null;
-
-        /// <summary>
-        /// Global shared instance across the entiere game.
-        /// </summary>
-        public static T Database {
-            get {
-                #if UNITY_EDITOR
-                if (!Application.isPlaying && (database == null) && AssetDatabase.FindAssets($"t:{typeof(T).Name}").SafeFirst(out string _guid)) {
-                    database = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(_guid), typeof(T)) as T;
-                }
-                #endif
-
-                return database;
-            }
-            protected set {
-                database = value;
-            }
-        }
-
-        // -----------------------
-
-        internal protected override void Init() {
-            Database = this as T;
-        }
+        public new const string MenuPrefix = "DT_";
+        public new const string MenuPath   = FrameworkUtility.MenuPath + "Game Database/";
         #endregion
     }
 }
