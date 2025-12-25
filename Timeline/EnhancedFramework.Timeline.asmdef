@@ -31,6 +31,11 @@
             "define": "TEXT_MESH_PRO_PACKAGE"
         },
         {
+            "name": "Unity",
+            "expression": "6000.0",
+            "define": "TEXT_MESH_PRO_PACKAGE"
+        },
+        {
             "name": "com.unity.render-pipelines.core",
             "expression": "",
             "define": "RENDER_PIPELINE"

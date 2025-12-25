@@ -177,6 +177,20 @@ namespace EnhancedFramework.Core {
         // -------------------------------------------
 
         /// <summary>
+        /// Indicates if any loading operation is currently in process.
+        /// </summary>
+        public static bool IsLoading {
+            get; private set;
+        }
+
+        /// <summary>
+        /// Indicates if any unloading operation is currently in process.
+        /// </summary>
+        public static bool IsUnloading {
+            get; private set;
+        }
+
+        /// <summary>
         /// The current <see cref="Core.LoadingState"/> of this scene manager.
         /// </summary>
         public LoadingState LoadingState {
@@ -493,6 +507,7 @@ namespace EnhancedFramework.Core {
             SetLoadingState(LoadingState.Inactive);
             Behaviour.OnStopLoading();
 
+            IsLoading = false;
             OnStopLoading?.Invoke();
             loadingCoroutine = null;
         }
@@ -517,6 +532,8 @@ namespace EnhancedFramework.Core {
 
             // Initialization.
             _behaviour.OnStartLoading();
+
+            IsLoading = true;
             OnStartLoading?.Invoke();
 
             SetLoadingState(LoadingState.Start);
@@ -737,6 +754,7 @@ namespace EnhancedFramework.Core {
             SetUnloadingState(UnloadingState.Inactive);
             Behaviour.OnStopUnloading();
 
+            IsUnloading = false;
             OnStopUnloading?.Invoke();
             unloadingCoroutine = null;
         }
@@ -761,6 +779,8 @@ namespace EnhancedFramework.Core {
 
             // Initialization.
             _behaviour.OnStartUnloading();
+
+            IsUnloading = true;
             OnStartUnloading?.Invoke();
 
             SetUnloadingState(UnloadingState.Start);

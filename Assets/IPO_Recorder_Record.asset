@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: IPO_Recorder_Record
   m_EditorClassIdentifier: 
   objectID:
-    type: 3
     assetGUID: 7047b3e9c1015dd448cdf6baaaa73af6
     objectID: 11400000
     prefabID: 0
+    assetHash: -1232710145
+    type: 3
   enableOnInit: 0
+  isPaused: 0
   isOrphan: 1
   map: {fileID: 0}
   input:

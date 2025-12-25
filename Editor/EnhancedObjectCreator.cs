@@ -353,7 +353,7 @@ namespace EnhancedFramework.Editor {
 
         #region Creator
         public const string CreateMenuPath  = "GameObject/" + FrameworkUtility.MenuPath;
-        public const string MenuPath        = SceneViewUtility.CreateGUI + FrameworkUtility.MenuPath;
+        public const string MenuPath        = EnhancedSceneView.CreateGUI + FrameworkUtility.MenuPath;
 
         public const int ContextMenuOrder   = 9;
         public const int CreateMenuOrder    = -9;

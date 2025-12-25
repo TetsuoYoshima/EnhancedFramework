@@ -22,7 +22,7 @@ namespace EnhancedFramework.Editor {
         int IOrderedCallback.callbackOrder => 999;
 
         /// <summary>
-        /// Settings containing informations about all all game options.
+        /// Settings containing informations about all game options.
         /// </summary>
         public static OptionSettings Settings => resource.GetResource();
 

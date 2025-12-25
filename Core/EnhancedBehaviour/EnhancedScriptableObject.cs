@@ -17,9 +17,18 @@ namespace EnhancedFramework.Core {
     /// Base class to derive enhanced <see cref="ScriptableObject"/> from.
     /// <para/> Provides an <see cref="EnhancedObjectID"/> for all its instances.
     /// </summary>
-    public abstract class EnhancedScriptableObject : ScriptableObject {
+    public abstract class EnhancedScriptableObject : ScriptableObject, ISaveable {
         #region Global Members
         [SerializeField, HideInInspector] private EnhancedObjectID objectID = EnhancedObjectID.Default;
+
+        // -----------------------
+
+        /// <summary>
+        /// Object used for console logging.
+        /// </summary>
+        public Object LogObject {
+            get { return this; }
+        }
 
         /// <summary>
         /// The unique identifier of this object.
@@ -79,30 +88,48 @@ namespace EnhancedFramework.Core {
         /// </summary>
         [ContextMenu("Get Object ID", false, 10)]
         private void GetObjectID() {
-
-            #if UNITY_EDITOR
-            // Editor behaviour.
-            if (!Application.isPlaying) {
-
-                EnhancedObjectID _objectID = new EnhancedObjectID(this);
-                if (objectID.Equals(_objectID)) {
-                    return;
-                }
-
-                Undo.RecordObject(this, "Assigning ID");
-
-                objectID = new EnhancedObjectID(this);
-                EditorUtility.SetDirty(this);
-
-                return;
-            }
-            #endif
-
-            // Runtime assignement.
-            if (!objectID.IsValid) {
-                objectID = new EnhancedObjectID(this);
-            }
+            objectID.GetID(this);
         }
+
+        /// <summary>
+        /// Logs this object id to the console.
+        /// </summary>
+        [ContextMenu("Print Object ID", false, 11)]
+        private void PrintObjectID() {
+            this.LogMessage("Object ID => " + ID.ToString() + "     |||     [Type]-[Asset/Scene.GUID]-[ObjectID].[PrefabID]");
+        }
+
+        /// <summary>
+        /// Logs this object raw id to the console.
+        /// </summary>
+        [ContextMenu("Debug Object ID", false, 12)]
+        private void DebugObjectID() {
+            this.LogMessage("DEBUG ID => " + new EnhancedObjectID(this).ToString() + "     |||     [Type]-[Asset/Scene.GUID]-[ObjectID].[PrefabID]");
+        }
+        #endregion
+
+        #region Saveable
+        // -------------------------------------------
+        // Savable
+        // -------------------------------------------
+
+        void ISaveable.Serialize(ObjectSaveData _data) {
+            OnSerialize(_data);
+        }
+
+        void ISaveable.Deserialize(ObjectSaveData _data) {
+            OnDeserialize(_data);
+        }
+
+        // -------------------------------------------
+        // Serialization
+        // -------------------------------------------
+
+        /// <inheritdoc cref="ISaveable.Serialize(ObjectSaveData)"/>
+        protected virtual void OnSerialize(ObjectSaveData _data) { }
+
+        /// <inheritdoc cref="ISaveable.Deserialize(ObjectSaveData)"/>
+        protected virtual void OnDeserialize(ObjectSaveData _data) { }
         #endregion
 
         #region Utility

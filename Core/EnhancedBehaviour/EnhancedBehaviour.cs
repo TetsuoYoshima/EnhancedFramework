@@ -13,7 +13,6 @@ using UnityEngine;
 
 #if UNITY_EDITOR
 using UnityEditor;
-using UnityEditor.SceneManagement;
 #endif
 
 using Object = UnityEngine.Object;
@@ -100,9 +99,9 @@ namespace EnhancedFramework.Core {
         /// <summary>
         /// Override this to specify if this object data should be automatically saved.
         /// <para/>
-        /// Use <see cref="OnSerialize(Core.SaveData)"/> and <see cref="OnDeserialize(Core.SaveData)"/> to save and load data.
+        /// Use <see cref="OnSerialize(Core.ObjectSaveData)"/> and <see cref="OnDeserialize(Core.ObjectSaveData)"/> to save and load data.
         /// </summary>
-        public virtual bool SaveData => false;
+        public virtual bool DoSaveData => false;
 
         /// <summary>
         /// Object used for console logging, using <see cref="UpdateManager"/> update system.
@@ -126,6 +125,8 @@ namespace EnhancedFramework.Core {
         [PropertyOrder(int.MinValue + 999)]
         [SerializeField, Enhanced, ReadOnly] protected float chronos = 1f;
         [SerializeField, HideInInspector] private EnhancedObjectID objectID = EnhancedObjectID.Default;
+
+        // -----------------------
 
         /// <summary>
         /// This object local time scale factor.
@@ -266,9 +267,7 @@ namespace EnhancedFramework.Core {
                 EnhancedSceneManager.Instance.RegisterProcessor(_processor);
             }
 
-            if (SaveData) {
-                SaveManager.Instance.Register(this);
-            }
+            RegisterSavableDynamicObject(true);
         }
 
         /// <summary>
@@ -320,8 +319,10 @@ namespace EnhancedFramework.Core {
                 EnhancedSceneManager.Instance.UnregisterProcessor(_processor);
             }
 
-            if (SaveData) {
-                SaveManager.Instance.Unregister(this);
+            UnregisterSavableDynamicObject(true);
+
+            if (!EnhancedSceneManager.IsUnloading) {
+                objectID.OnDisabled(this);
             }
         }
 
@@ -348,82 +349,118 @@ namespace EnhancedFramework.Core {
         // --- Logic --- \\
 
         #region Object ID
-        /// <summary>
-        /// If true, automatically regenerates this object ID on play if required.
-        /// </summary>
-        public virtual bool AutoRegenerateID {
-            get { return true; }
-        }
-
-        // -----------------------
+        // -------------------------------------------
+        // Core
+        // -------------------------------------------
 
         /// <summary>
         /// Get this object unique ID.
         /// </summary>
         [ContextMenu("Get Object ID", false, 10)]
         private void GetObjectID() {
+            objectID.GetID(this);
+        }
 
-            #if UNITY_EDITOR
-            if (!Application.isPlaying) {
+        /// <summary>
+        /// Set this object <see cref="objectID"/>.
+        /// </summary>
+        /// <param name="_id">New <see cref="EnhancedObjectID"/> to assign to this object.</param>
+        public void SetObjectID(EnhancedObjectID _id, bool _reload = true) {
+            objectID.Copy(_id);
 
-                // Prefab objects always have a null scene id.
-                if (!gameObject.scene.IsValid() || (StageUtility.GetCurrentStage() is PrefabStage)) {
-
-                    if (objectID.IsValid) {
-                        SetID(EnhancedObjectID.Default);
-                    }
-
-                    return;
-                }
-
-                if (true/*!objectID.IsValid*/) {
-
-                    EnhancedObjectID _objectID = new EnhancedObjectID(this);
-                    SetID(_objectID);
-                }
-
-                return;
+            if (_reload) {
+                RefreshSavableDynamicObject(true);
             }
+        }
 
-            // ----- Local Method ----- \\
+        /// <summary>
+        /// Set this object <see cref="objectID"/> associated instance id.
+        /// </summary>
+        /// <param name="_id">New instance id to assign to this object.</param>
+        public void SetObjectInstanceID(int _instanceID, bool _reload = true) {
+            objectID.SetInstanceID(_instanceID);
 
-            void SetID(EnhancedObjectID _id) {
-
-                if (objectID == _id) {
-                    return;
-                }
-
-                Undo.RecordObject(this, "Assigning ID");
-                PrefabUtility.RecordPrefabInstancePropertyModifications(this);
-
-                objectID = _id;
-                EditorUtility.SetDirty(this);
+            if (_reload) {
+                RefreshSavableDynamicObject(true);
             }
-            #endif
+        }
 
-            // Runtime assignement.
-            if (AutoRegenerateID) {
-                objectID.InitSceneObject(this);
-            }
+        // -------------------------------------------
+        // Utility
+        // -------------------------------------------
+
+        /// <summary>
+        /// Logs this object id to the console.
+        /// </summary>
+        [ContextMenu("Print Object ID", false, 11)]
+        private void PrintObjectID() {
+            this.LogMessage("Object ID => " + ID.ToString() + "     |||     [Type]-[Asset/Scene.GUID]-[ObjectID].[PrefabID]");
+        }
+
+        /// <summary>
+        /// Logs this object raw id to the console.
+        /// </summary>
+        [ContextMenu("Debug Object ID", false, 12)]
+        private void DebugObjectID() {
+            this.LogMessage("DEBUG ID => " + new EnhancedObjectID(this).ToString() + "     |||     [Type]-[Asset/Scene.GUID]-[ObjectID].[PrefabID]");
         }
         #endregion
 
         #region Saveable
-        void ISaveable.Serialize(SaveData _data) {
+        /// <summary>
+        /// Indicates if this object can save data and was dynamically instantiated.
+        /// </summary>
+        public bool IsSavableDynamicObject {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return DoSaveData && objectID.IsDynamicSceneObject; }
+        }
+
+        // -------------------------------------------
+        // Savable
+        // -------------------------------------------
+
+        void ISaveable.Serialize(ObjectSaveData _data) {
             OnSerialize(_data);
         }
 
-        void ISaveable.Deserialize(SaveData _data) {
+        void ISaveable.Deserialize(ObjectSaveData _data) {
             OnDeserialize(_data);
         }
 
-        // -----------------------
+        // -------------------------------------------
+        // Registration
+        // -------------------------------------------
 
-        /// <inheritdoc cref="ISaveable.Serialize(SaveData)"/>
-        protected virtual void OnSerialize(SaveData _data) { }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void RegisterSavableDynamicObject(bool _loadData = true) {
+            if (IsSavableDynamicObject) {
+                SaveManager.Instance.RegisterDynamicSceneObject(this, _loadData);
+            }
+        }
 
-        /// <inheritdoc cref="ISaveable.Deserialize(SaveData)"/>
-        protected virtual void OnDeserialize(SaveData _data) { }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void RefreshSavableDynamicObject(bool _loadData = true) {
+            if (IsSavableDynamicObject) {
+                SaveManager.Instance.RegisterModifiedDynamicSceneObject(this, _loadData);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UnregisterSavableDynamicObject(bool _saveData = true) {
+            if (IsSavableDynamicObject) {
+                SaveManager.Instance.UnregisterDynamicSceneObject(this, _saveData);
+            }
+        }
+
+        // -------------------------------------------
+        // Serialization
+        // -------------------------------------------
+
+        /// <inheritdoc cref="ISaveable.Serialize(ObjectSaveData)"/>
+        protected virtual void OnSerialize(ObjectSaveData _data) { }
+
+        /// <inheritdoc cref="ISaveable.Deserialize(ObjectSaveData)"/>
+        protected virtual void OnDeserialize(ObjectSaveData _data) { }
         #endregion
 
         #region Events

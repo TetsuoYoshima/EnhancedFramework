@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: IPO_Recorder_Replay
   m_EditorClassIdentifier: 
   objectID:
-    type: 3
     assetGUID: f9da1f5746ee95c408838cc7c291f312
     objectID: 11400000
     prefabID: 0
+    assetHash: 1730792165
+    type: 3
   enableOnInit: 0
+  isPaused: 0
   isOrphan: 1
   map: {fileID: 0}
   input:

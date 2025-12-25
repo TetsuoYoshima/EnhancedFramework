@@ -29,7 +29,7 @@ namespace EnhancedFramework.Core {
         /// <br/> Use this to write and save values.
         /// </summary>
         /// <param name="_data">Use this to serialize data (don't use deserialization).</param>
-        public void Serialize(SaveData _data);
+        public void Serialize(ObjectSaveData _data);
 
         /// <summary>
         /// Deserializes this object data.
@@ -38,7 +38,7 @@ namespace EnhancedFramework.Core {
         /// Deserialization should be performed in the same order than for serialization.
         /// </summary>
         /// <param name="_data">Use this to deserialize data (don't use serialization).</param>
-        public void Deserialize(SaveData _data);
+        public void Deserialize(ObjectSaveData _data);
         #endregion
     }
 }

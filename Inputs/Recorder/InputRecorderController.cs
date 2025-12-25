@@ -23,7 +23,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using EnhancedFramework.Core.Option;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -108,7 +107,7 @@ namespace EnhancedFramework.Inputs {
         [Space(10f)]
 
         [Tooltip("Path where to write the records on disk")]
-        [SerializeField] private OptionPath path = OptionPath.PersistentPath;
+        [SerializeField] private FilePath path = FilePath.PersistentPath;
 
         // -----------------------
 
@@ -304,14 +303,7 @@ namespace EnhancedFramework.Inputs {
         /// </summary>
         public string CapturePath {
             get {
-                string _path = Path.Combine(path.Get(true), CaptureFolder);
-
-                // No directory.
-                if (!Directory.Exists(_path)) {
-                    Directory.CreateDirectory(_path);
-                }
-
-                return _path;
+                return path.Get(CaptureFolder, true);
             }
         }
 

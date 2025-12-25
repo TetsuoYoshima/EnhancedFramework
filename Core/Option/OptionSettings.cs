@@ -8,11 +8,13 @@ using EnhancedEditor;
 using EnhancedFramework.Core.Settings;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Audio;
 
 using Range = EnhancedEditor.RangeAttribute;
 
+[assembly: InternalsVisibleTo("EnhancedFramework.Editor")]
 namespace EnhancedFramework.Core.Option {
     /// <summary>
     /// <see cref="OptionSettings"/>-related option base class.
@@ -361,7 +363,7 @@ namespace EnhancedFramework.Core.Option {
         [Section("Option Settings")]
 
         [Tooltip("Path where to write these settings on disk")]
-        [SerializeField] private OptionPath path = OptionPath.PersistentPath;
+        [SerializeField] private FilePath path = Core.FilePath.PersistentPath;
 
         [Tooltip("Name of the option file to write on disk (including extension)")]
         [SerializeField] private string fileName = "GameOption.ini";
@@ -533,7 +535,7 @@ namespace EnhancedFramework.Core.Option {
         /// Clears and deletes these option file from disk.
         /// </summary>
         [Button(SuperColor.Crimson, IsDrawnOnTop = false)]
-        public void Clear() {
+        public void Delete() {
 
             string _filePath = FilePath;
 
@@ -546,7 +548,7 @@ namespace EnhancedFramework.Core.Option {
         /// Opens the game option directory.
         /// </summary>
         [Button(SuperColor.Green, IsDrawnOnTop = false)]
-        public void Open() {
+        public void OpenDirectory() {
 
             string _filePath = Path.GetDirectoryName(FilePath);
 

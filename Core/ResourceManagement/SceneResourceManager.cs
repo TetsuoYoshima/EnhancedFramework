@@ -7,14 +7,17 @@
 using EnhancedEditor;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
+#if UNITY_EDITOR
+using UnityEditor;
+using SceneAsset = EnhancedEditor.SceneAsset;
+#endif
 
 using Object  = UnityEngine.Object;
 using RLoader = EnhancedEditor.Reference<EnhancedFramework.Core.ResourceLoader>;
 
-[assembly: InternalsVisibleTo("EnhancedFramework.Editor")]
 namespace EnhancedFramework.Core {
     /// <summary>
     /// Base <see cref="ResourceLoader{T}"/>-related resource interface.
@@ -165,7 +168,7 @@ namespace EnhancedFramework.Core {
     /// </summary>
     [ScriptGizmos(false, true)]
     [AddComponentMenu(FrameworkUtility.MenuPath + "General/Scene Resource Manager"), DisallowMultipleComponent]
-    public sealed class SceneResourceManager : EnhancedBehaviour, ILoadingProcessor {
+    public sealed class SceneResourceManager : EnhancedBehaviour, ILoadingProcessor, IEnhancedSceneOperator {
         public override UpdateRegistration UpdateRegistration => base.UpdateRegistration | UpdateRegistration.Init;
 
         #region Loading Processor
@@ -248,13 +251,17 @@ namespace EnhancedFramework.Core {
         }
         #endregion
 
-        #region Editor
-        #if UNITY_EDITOR
+        #region Utility
+        // -------------------------------------------
+        // Editor
+        // -------------------------------------------
+
         /// <summary>
-        /// Called from an editor class to serialize all resources in the scene.
+        /// Called from the editor to serialize all resources in the scene.
         /// </summary>
-        internal void GetSceneResources() {
-            // Each time this object scene is saved, register all resources in it.
+        [Button(ActivationMode.Editor, SuperColor.HarvestGold)]
+        public void GetSceneResources(bool _setDirty) {
+
             GameObject[] _objects = gameObject.scene.GetRootGameObjects();
             resources.Clear();
 
@@ -265,6 +272,12 @@ namespace EnhancedFramework.Core {
                     RegisterBehaviour(_behaviour);
                 }
             }
+
+            #if UNITY_EDITOR
+            if (_setDirty && !Application.isPlaying) {
+                EditorUtility.SetDirty(this);
+            }
+            #endif
 
             // ----- Local Method ----- \\
 
@@ -293,7 +306,6 @@ namespace EnhancedFramework.Core {
                 }
             }
         }
-        #endif
         #endregion
     }
 }

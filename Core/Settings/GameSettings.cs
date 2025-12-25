@@ -97,9 +97,12 @@ namespace EnhancedFramework.Core.Settings {
         #region Global Members
         [Section("Game Settings")]
 
-        [SerializeField] private ScriptableSettings[] settings = new ScriptableSettings[0];
+        #if UNITY_EDITOR
+        // Used to properly display the above section.
+        [SerializeField, Enhanced, ShowIf(nameof(foo))] private bool foo = false;
+        #endif
 
-        [Space(10f), HorizontalLine(SuperColor.Grey, 1f), Space(10f)]
+        [SerializeField] private ScriptableSettings[] settings = new ScriptableSettings[0];
 
         [Tooltip("All scripting symbols currently defined in the game")]
         [SerializeField, Enhanced, ReadOnly] internal string[] scriptingSymbols = new string[0];

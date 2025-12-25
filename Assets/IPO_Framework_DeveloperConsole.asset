@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: IPO_Framework_DeveloperConsole
   m_EditorClassIdentifier: 
   objectID:
-    type: 3
     assetGUID: ce7520f7796d66948a9a8f313609b341
     objectID: 11400000
     prefabID: 0
+    assetHash: -350270905
+    type: 3
   enableOnInit: 0
   isPaused: 0
   isOrphan: 1

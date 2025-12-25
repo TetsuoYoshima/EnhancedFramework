@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: IPO_Chronos_Pause
   m_EditorClassIdentifier: 
   objectID:
-    type: 3
     assetGUID: c2f72c4fc2d26ba4b82ae4053da63291
     objectID: 11400000
     prefabID: 0
+    assetHash: 1745406477
+    type: 3
   enableOnInit: 1
+  isPaused: 0
   isOrphan: 1
   map: {fileID: 0}
   input:

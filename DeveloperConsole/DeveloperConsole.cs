@@ -41,15 +41,15 @@ using UnityEngine.InputSystem;
 using InputKey = UnityEngine.InputSystem.Key;
 #else
 using InputSystem = UnityEngine.Input;
-using InputKey = UnityEngine.KeyCode;
+using InputKey    = UnityEngine.KeyCode;
 #endif
 
 #if TEXT_MESH_PRO
 using InputField = TMPro.TMP_InputField;
-using Text = TMPro.TextMeshProUGUI;
+using Text       = TMPro.TextMeshProUGUI;
 #else
 using InputField = UnityEngine.UI.InputField;
-using Text = UnityEngine.UI.Text;
+using Text       = UnityEngine.UI.Text;
 #endif
 
 using Command   = EnhancedFramework.DeveloperConsoleSystem.DeveloperConsoleCommand;

@@ -4,23 +4,21 @@
 //
 // ================================================================================== //
 
+using EnhancedEditor;
 using EnhancedFramework.Core;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-using ArrayUtility = EnhancedEditor.ArrayUtility;
-
 namespace EnhancedFramework.Editor {
     /// <summary>
-    /// Editor class used to get each <see cref="SceneResourceManager"/> instance resources without action from the user.
+    /// Editor class used to perform <see cref="LevelTriggerArea"/>-related editor operations, such as drawing handles.
     /// </summary>
     [InitializeOnLoad]
     internal static class LevelTriggerAreaDrawer {
         #region Content
-        private static LevelTriggerArea[] triggerAreas = new LevelTriggerArea[0];
-
         // -------------------------------------------
         // Constructor(s)
         // -------------------------------------------
@@ -54,11 +52,11 @@ namespace EnhancedFramework.Editor {
 
         private static void OnSceneGUI(SceneView _sceneView) {
 
-            ref LevelTriggerArea[] _span = ref triggerAreas;
-            for (int i = _span.Length; i-- > 0;) {
+            ref List<LevelTriggerArea> _span = ref LevelTriggerArea.triggerAreas;
+            for (int i = _span.Count; i-- > 0;) {
 
                 if (_span[i] == null) {
-                    ArrayUtility.RemoveAt(ref _span, i);
+                    _span.RemoveAt(i);
                     continue;
                 }
 
@@ -71,7 +69,7 @@ namespace EnhancedFramework.Editor {
         // -------------------------------------------
 
         private static void GetTriggerAras() {
-            triggerAreas = Object.FindObjectsByType<LevelTriggerArea>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            LevelTriggerArea.triggerAreas.ReplaceBy(Object.FindObjectsByType<LevelTriggerArea>(FindObjectsInactive.Include, FindObjectsSortMode.None));
         }
         #endregion
     }

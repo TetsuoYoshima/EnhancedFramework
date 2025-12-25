@@ -20,7 +20,7 @@ namespace EnhancedFramework.Core {
     /// </summary>
     [ScriptGizmos(false, true)]
     [AddComponentMenu(FrameworkUtility.MenuPath + "Trigger/Level Trigger Area")]
-    public sealed class LevelTriggerArea : LevelTrigger, IDynamicUpdate {
+    public sealed class LevelTriggerArea : LevelTrigger, IDynamicUpdate, IVerticeArea {
         #region Handles Mode
         /// <summary>
         /// Mode used to determine which handles should be drawn.
@@ -32,6 +32,7 @@ namespace EnhancedFramework.Core {
 
             Area    = 1,
             Portals = 2,
+            Outline = 3,
         }
         #endregion
 
@@ -44,7 +45,6 @@ namespace EnhancedFramework.Core {
 
         [Tooltip("Edits this area vertices and positions")]
         [SerializeField, Enhanced, ToggleButton("EditCollider")] private bool editArea = false;
-
 
         [Tooltip("When active, always draw this trigger area in the scene view")]
         [SerializeField] private bool pinArea = false;
@@ -62,6 +62,11 @@ namespace EnhancedFramework.Core {
         /// </summary>
         public List<Vector3> AreaVertices {
             get { return areaVertices; }
+        }
+
+        /// <inheritdoc/>
+        public int VerticeCount {
+            get { return areaVertices.Count; }
         }
         #endregion
 
@@ -85,14 +90,18 @@ namespace EnhancedFramework.Core {
             };
         }
 
-        private const float AreaPointHandlesAlpha = .7f;
-        private const float AreaPointHandlesSize  = .2f;
+        internal static List<LevelTriggerArea> triggerAreas = new List<LevelTriggerArea>();
 
         private static Tool lastTool  = Tool.None;
         private static bool isEditing = false;
         private static int editingAreaID = -1;
 
         // -----------------------
+
+        protected override void OnValidate() {
+            base.OnValidate();
+            triggerAreas.AddIfNotExists(this);
+        }
 
         protected internal override void OnDrawHandles() {
 
@@ -128,35 +137,39 @@ namespace EnhancedFramework.Core {
             Quaternion _rotation = _transform.rotation;
             Vector3 _position    = _transform.position;
 
+            //_position.y += .1f + (_transform.lossyScale.y * -.5f);
+
+            ref List<Vector3> _verticeSpan = ref areaVertices;
+
             if (isEditing && (editingAreaID == GetInstanceID())) {
 
-                for (int i = 0; i < areaVertices.Count; i++) {
+                for (int i = _verticeSpan.Count; i-- > 0;) {
 
-                    Vector3 _pos = areaVertices[i];
+                    Vector3 _pos = _verticeSpan[i];
                     _pos = Handles.PositionHandle(_position + _pos.Rotate(_rotation), _rotation) - _position;
 
-                    areaVertices[i] = _pos.RotateInverse(_rotation);
+                    _verticeSpan[i] = _pos.RotateInverse(_rotation);
                 }
             }
 
             // No enough vertices to draw an area.
-            if ((areaVertices.Count < 2) || (handles == HandlesMode.None)) {
+            if ((_verticeSpan.Count < 2) || (handles == HandlesMode.None)) {
                 return;
             }
 
-            Vector3[] _vertices = areaVertices.ConvertAll(p => _position + p.Rotate(_rotation)).ToArray();
+            Vector3[] _vertices = _verticeSpan.ConvertAll(p => _position + p.Rotate(_rotation)).ToArray();
             ArrayUtility.Add(ref _vertices, _vertices.First());
 
-            SuperColor _color = actors.ContainsValue(true) ? SuperColor.Green : SuperColor.Crimson;
-            Color _wireframeColor = SuperColor.Black.Get();
+            SuperColor _color = actors.ContainsValue(true) ? SuperColor.Green : VerticeAreaUtility.AreaFillColor;
+            Color _wireframeColor = VerticeAreaUtility.AreaLineColor;
 
             // Handles mangement.
             if (handles == HandlesMode.Portals) {
                 base.OnDrawHandles();
                 _wireframeColor = _color.Get();
 
-            } else {
-                using (var _scope = EnhancedGUI.HandlesColor.Scope(_color.Get(.4f))) {
+            } else if (handles == HandlesMode.Area) {
+                using (var _scope = EnhancedGUI.HandlesColor.Scope(_color.Get(VerticeAreaUtility.AreaFillHandlesAlpha))) {
                     Handles.DrawAAConvexPolygon(_vertices);
                 }
             }
@@ -166,11 +179,11 @@ namespace EnhancedFramework.Core {
                 Handles.DrawAAPolyLine(_vertices);
             }
 
-            using (var _scope = EnhancedGUI.HandlesColor.Scope(SuperColor.HarvestGold.Get(AreaPointHandlesAlpha))) {
+            using (var _scope = EnhancedGUI.HandlesColor.Scope(VerticeAreaUtility.AreaPointColor)) {
                 for (int i = 0; i < _vertices.Length - 1; i++) {
 
                     Vector3 _vertice = _vertices[i];
-                    Handles.SphereHandleCap(0, _vertice, Quaternion.identity, AreaPointHandlesSize, EventType.Repaint);
+                    Handles.SphereHandleCap(0, _vertice, Quaternion.identity, VerticeAreaUtility.AreaPointHandlesSize, EventType.Repaint);
 
                     if (isEditing) {
                         Handles.Label(_vertice + _transform.up * .5f, i.ToString(), Styles.HandleStyle);
@@ -183,6 +196,8 @@ namespace EnhancedFramework.Core {
 
         #region Trigger
         public const float UpdateCooldwonDefaultDuration = .05f;
+        public const UpdateRegistration UpdateType = UpdateRegistration.Dynamic;
+
         private readonly PairCollection<ITriggerActor, bool> actors = new PairCollection<ITriggerActor, bool>();
 
         /// <summary>
@@ -257,7 +272,7 @@ namespace EnhancedFramework.Core {
 
             // Registration.
             if (!IsActive) {
-                UpdateManager.Instance.Register(this, UpdateRegistration.Dynamic);
+                UpdateManager.Instance.Register(this, UpdateType);
             }
 
             // Register actor.
@@ -280,7 +295,7 @@ namespace EnhancedFramework.Core {
 
             // Unregistration.
             if (!IsActive) {
-                UpdateManager.Instance.Unregister(this, UpdateRegistration.Dynamic);
+                UpdateManager.Instance.Unregister(this, UpdateType);
             }
         }
 
@@ -335,13 +350,13 @@ namespace EnhancedFramework.Core {
                 _extents = _extents.Divide(_scale);
             }
 
-            _bounds.center  = _center;
+            _bounds.center = _center;
             _bounds.extents = new Vector3(Mathf.Abs(_extents.x), Mathf.Abs(_extents.y), Mathf.Abs(_extents.z));
 
             _transform.rotation = _rotation;
 
             if (!_scale.IsNull()) {
-                _bounds.center  = _bounds.center.Divide(_scale);
+                _bounds.center = _bounds.center.Divide(_scale);
                 _bounds.extents = _bounds.extents.Divide(_scale);
             }
 
@@ -358,12 +373,41 @@ namespace EnhancedFramework.Core {
 
                 case BoxCollider _box:
                     _box.center = _bounds.center;
-                    _box.size   = _bounds.size;
+                    _box.size = _bounds.size;
                     break;
 
                 default:
                     break;
             }
+        }
+
+        // -------------------------------------------
+        // Vertice Area
+        // -------------------------------------------
+
+        /// <inheritdoc/>
+        public void GetAreaVertices(List<Vector3> _vertices) {
+            _vertices.ReplaceBy(areaVertices);
+        }
+
+        /// <inheritdoc/>
+        public void GetAreaVertices(ref Vector3[] _vertices) {
+            for (int i = VerticeCount; i-- > 0;) {
+                _vertices[i] = areaVertices[i];
+            }
+        }
+
+        /// <inheritdoc/>
+        public void SetAreaVertices(IList<Vector3> _vertices) {
+            areaVertices.ReplaceBy(_vertices);
+            SetupCollider();
+        }
+
+        /// <inheritdoc/>
+        void IVerticeArea.Pin(bool _isPinned) {
+            #if UNITY_EDITOR
+            pinArea = _isPinned;
+            #endif
         }
         #endregion
 
@@ -375,16 +419,13 @@ namespace EnhancedFramework.Core {
         // -----------------------
 
         public override void SavePlayModeData(PlayModeEnhancedObjectData _data) {
-
             // Save vertices.
-            _data.Vectors.AddRange(areaVertices);
+            _data.Vectors.ReplaceBy(areaVertices);
         }
 
         public override void LoadPlayModeData(PlayModeEnhancedObjectData _data) {
-
             // Load vertices.
-            areaVertices = _data.Vectors;
-            SetupCollider();
+            SetAreaVertices(_data.Vectors);
         }
         #endregion
     }
