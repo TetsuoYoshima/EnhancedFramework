@@ -254,6 +254,16 @@ namespace EnhancedFramework.Core {
         }
 
         /// <summary>
+        /// This id associated dynamic instance id.
+        /// </summary>
+        #if JSON_SERIALIZATION
+        [JsonIgnore]
+        #endif
+        public int InstanceID {
+            get { return instanceID; }
+        }
+
+        /// <summary>
         /// Indicates if this id is valid.
         /// </summary>
         #if JSON_SERIALIZATION
@@ -384,6 +394,7 @@ namespace EnhancedFramework.Core {
 
         #region Core
         internal static bool DynamicObjectStableID = false;
+        internal static bool ConsoleLogs = false;
 
         private static readonly DynamicInstanceData dynamicData = new DynamicInstanceData();
         private static readonly EnhancedObjectID bufferID       = Default;
@@ -408,7 +419,11 @@ namespace EnhancedFramework.Core {
                 if (!_id.IsValid || Equals(_id))
                     return false;
 
-                this.LogMessage(_object.name + " - Update Scriptable ID =>      " + this + "     |||     " + _id);
+                #if UNITY_EDITOR
+                if (ConsoleLogs) {
+                    _object.LogMessage(_object.name + " - Update Scriptable ID =>      " + this + "     |||     " + _id);
+                }
+                #endif
 
                 // Assign new value.
                 Undo.RecordObject(_object, "Assigning ID");
@@ -459,10 +474,14 @@ namespace EnhancedFramework.Core {
                 }
 
                 // Ignore if invalid.
-                if (!_id.IsValid || Equals(_id))
+                if (!_id.IsValid || EqualsSlow(_id))
                     return false;
 
-                this.LogMessage(_object.name + " - update id => " + this + "   |||   " + _id);
+                #if UNITY_EDITOR
+                if (ConsoleLogs) {
+                    _object.LogMessage(_object.name + " - update id => " + this + "   |||   " + _id);
+                }
+                #endif
 
                 // Assign new value.
                 Undo.RecordObject(_object, "Assigning ID");
@@ -578,6 +597,14 @@ namespace EnhancedFramework.Core {
             instanceID = _id.instanceID;
             type       = _id.type;
         }
+        
+        /// <summary>
+        /// Get a simplified version of this object id.
+        /// </summary>
+        /// <returns>Object id as first, instance id as second.</returns>
+        public Pair<ulong, int> GetSimplifiedID() {
+            return new Pair<ulong, int>(objectID, instanceID);
+        }
 
         /// <summary>
         /// Set this object instance id.
@@ -599,6 +626,24 @@ namespace EnhancedFramework.Core {
                    prefabID  .Equals(_id.prefabID)   &&
                    instanceID.Equals(_id.instanceID) &&
                    assetHash .Equals(_id.assetHash);
+        }
+
+        /// <summary>
+        /// Compares this id with another one, checking <see cref="string"/> content.
+        /// </summary>
+        /// <inheritdoc cref="Equals"/>
+        public bool EqualsSlow(EnhancedObjectID _id) {
+            return Equals(_id) && assetGUID.Equals(_id.assetGUID, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Compares this id with a simplified id.
+        /// </summary>
+        /// <param name="_objectID">Object id to compare with this one.</param>
+        /// <param name="_instanceID">Instance id to compare with this one.</param>
+        /// <returns>True if ids are equal, false otherwise.</returns>
+        public bool EqualsSimplified(ulong _objectID, int _instanceID) {
+            return objectID.Equals(_objectID) && _instanceID.Equals(_instanceID);
         }
 
         /// <summary>

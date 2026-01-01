@@ -124,7 +124,8 @@ namespace EnhancedFramework.Core {
         #region Global Members
         [PropertyOrder(int.MinValue + 999)]
         [SerializeField, Enhanced, ReadOnly] protected float chronos = 1f;
-        [SerializeField, HideInInspector] private EnhancedObjectID objectID = EnhancedObjectID.Default;
+        [HiddenProperty]
+        [SerializeField, Enhanced, ReadOnly] private EnhancedObjectID objectID = EnhancedObjectID.Default;
 
         // -----------------------
 

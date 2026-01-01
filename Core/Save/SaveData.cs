@@ -546,13 +546,16 @@ namespace EnhancedFramework.Core {
     [Serializable]
     public sealed class ObjectSaveData {
         #region Global Members
-        /// <summary>
-        /// Identifier of the object associated with this data.
-        /// </summary>
+        // Simplified ID.
         #if JSON_SERIALIZATION
         [JsonProperty]
         #endif
-        public EnhancedObjectID ID = EnhancedObjectID.Default;
+        [SerializeField] private ulong objectID = 0L;
+
+        #if JSON_SERIALIZATION
+        [JsonProperty]
+        #endif
+        [SerializeField] private int instanceID = 0;
 
         // Struct.
         public SaveDataType<Vector3>  Vector3_data    = null;
@@ -575,7 +578,9 @@ namespace EnhancedFramework.Core {
 
         /// <inheritdoc cref="ObjectSaveData"/>
         public ObjectSaveData(EnhancedObjectID _id) {
-            ID.Copy(_id);
+            var _simplifiedID = _id.GetSimplifiedID();
+            objectID   = _simplifiedID.First;
+            instanceID = _simplifiedID.Second;
         }
         #endregion
 
@@ -595,7 +600,7 @@ namespace EnhancedFramework.Core {
         /// <param name="_id">Id to check.</param>
         /// <returns>True if this object matches the given id, false otherwise.</returns>
         public bool Match(EnhancedObjectID _id) {
-            return _id.Equals(ID);
+            return _id.EqualsSimplified(objectID, instanceID);
         }
 
         /// <summary>
@@ -613,7 +618,7 @@ namespace EnhancedFramework.Core {
         /// <param name="_id">Id to compare.</param>
         /// <returns>-1 if this object id is inferior to the other, 1 if superior, 0 if they are equal.</returns>
         public int CompareObjectID(EnhancedObjectID _id) {
-            return ID.ObjectID.CompareTo(_id.ObjectID);
+            return objectID.CompareTo(_id.ObjectID);
         }
         #endregion
 
@@ -690,8 +695,17 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_id"><see cref="EnhancedObjectID"/> to setup.</param>
         internal void Setup(EnhancedObjectID _id) {
-            ID.Copy(_id);
+            Copy(_id);
             Clear();
+        }
+
+        /// <summary>
+        /// Copies the values of a given <see cref="EnhancedObjectID"/>.
+        /// </summary>
+        internal void Copy(EnhancedObjectID _id) {
+            var _simplifiedID = _id.GetSimplifiedID();
+            objectID   = _simplifiedID.First;
+            instanceID = _simplifiedID.Second;
         }
 
         /// <summary>
@@ -724,7 +738,8 @@ namespace EnhancedFramework.Core {
         /// </summary>
         /// <param name="_data">Other object to copy data from.</param>
         public void Copy(ObjectSaveData _data) {
-            ID.Copy(_data.ID);
+            instanceID = _data.instanceID;
+            objectID   = _data.objectID;
 
             CopyData(ref Vector3_data, ref _data.Vector3_data);
             CopyData(ref String_data , ref _data.String_data );
